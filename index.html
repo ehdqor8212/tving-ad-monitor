@@ -470,6 +470,8 @@
       <button class="tab" onclick="go('kbo-insight',this)">KBO 종합분석</button>
       <button class="tab" onclick="go('kbo-calc',this)">보너스 계산기</button>
       <button class="tab" onclick="go('kbo-alloc',this)">보너스율 배분 계산기</button>
+      <button class="tab" onclick="go('weekly',this)">📋 주간 리포트</button>
+      <button class="tab" onclick="go('guide',this)" style="margin-left:12px;border-left:1px solid var(--border);padding-left:12px">📖 사용 가이드</button>
     </div>
   </div>
 </div>
@@ -509,20 +511,72 @@
   <div class="row2" style="margin-bottom:16px">
     <div class="card" style="margin-bottom:0;border-left:3px solid var(--red)">
       <div class="card-title" style="color:var(--red);margin-bottom:12px">⚾ KBO <span id="kbo-tag-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">집행예산</div><div style="font-size:18px;font-weight:700" id="kbo-spend">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">집행노출수</div><div style="font-size:18px;font-weight:700" id="kbo-imp">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">총예산</div><div style="font-size:14px;font-weight:600;color:var(--text2)" id="kbo-total-budget">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">이상 감지</div><div style="font-size:14px;font-weight:600" id="kbo-alerts">—</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">당일 집행예산</div>
+          <div style="font-size:14px;font-weight:700;color:var(--blue-text)" id="kbo-today-spend">—</div>
+          <div style="font-size:10px;color:var(--text3)" id="kbo-today-label">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">전일 집행예산</div>
+          <div style="font-size:14px;font-weight:700" id="kbo-prev-spend">—</div>
+          <div style="font-size:10px;color:var(--text3)" id="kbo-prev-label">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">누적 집행예산</div>
+          <div style="font-size:14px;font-weight:700" id="kbo-spend">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">당일 노출수</div>
+          <div style="font-size:14px;font-weight:700;color:var(--blue-text)" id="kbo-today-imp">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">전일 노출수</div>
+          <div style="font-size:14px;font-weight:700" id="kbo-prev-imp">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">누적 노출수</div>
+          <div style="font-size:14px;font-weight:700" id="kbo-imp">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">총예산</div><div style="font-size:13px;font-weight:600;color:var(--text2)" id="kbo-total-budget">—</div></div>
+        <div style="flex:1"><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">이상 감지</div><div style="font-size:13px;font-weight:600" id="kbo-alerts">—</div></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:0;border-left:3px solid var(--blue)">
       <div class="card-title" style="color:var(--blue-text);margin-bottom:12px">📋 예약형 <span id="gen-tag-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">집행예산</div><div style="font-size:18px;font-weight:700" id="gen-spend">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">집행노출수</div><div style="font-size:18px;font-weight:700" id="gen-imp">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">총예산</div><div style="font-size:14px;font-weight:600;color:var(--text2)" id="gen-total-budget">—</div></div>
-        <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">이상 감지</div><div style="font-size:14px;font-weight:600" id="gen-alerts">—</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">당일 집행예산</div>
+          <div style="font-size:14px;font-weight:700;color:var(--blue-text)" id="gen-today-spend">—</div>
+          <div style="font-size:10px;color:var(--text3)" id="gen-today-label">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">전일 집행예산</div>
+          <div style="font-size:14px;font-weight:700" id="gen-prev-spend">—</div>
+          <div style="font-size:10px;color:var(--text3)" id="gen-prev-label">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">누적 집행예산</div>
+          <div style="font-size:14px;font-weight:700" id="gen-spend">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">당일 노출수</div>
+          <div style="font-size:14px;font-weight:700;color:var(--blue-text)" id="gen-today-imp">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">전일 노출수</div>
+          <div style="font-size:14px;font-weight:700" id="gen-prev-imp">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">누적 노출수</div>
+          <div style="font-size:14px;font-weight:700" id="gen-imp">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">총예산</div><div style="font-size:13px;font-weight:600;color:var(--text2)" id="gen-total-budget">—</div></div>
+        <div style="flex:1"><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">이상 감지</div><div style="font-size:13px;font-weight:600" id="gen-alerts">—</div></div>
       </div>
     </div>
   </div>
@@ -546,13 +600,59 @@
     </div>
   </div><!-- /3열 그리드 -->
 
+  <!-- 상품 템플릿별 소진 현황 -->
   <div class="card" style="margin-bottom:16px">
-    <div class="card-title">일별 소진 추이 — 실제 vs 목표 일예산</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin-bottom:0">📦 상품 템플릿별 소진 현황 <span style="font-size:11px;font-weight:400;color:var(--text3)">(ACTIVE 기준)</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="tmpl-sort" onchange="renderTemplateBreakdown()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)">
+          <option value="spend">집행예산 순</option>
+          <option value="prevSpend">전일 집행 순</option>
+          <option value="imps">노출수 순</option>
+          <option value="camps">캠페인 수 순</option>
+        </select>
+        <select id="tmpl-filter" onchange="renderTemplateBreakdown();_buildTmplDateChart();" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)">
+          <option value="all">전체</option>
+          <option value="kbo">KBO만</option>
+          <option value="gen">예약형만</option>
+        </select>
+        <button class="btn" onclick="downloadTemplateCSV()" style="font-size:11px">📥 CSV 다운로드</button>
+      </div>
+    </div>
+    <div id="tmpl-breakdown-container">
+      <div class="empty" style="padding:1.5rem;font-size:12px">데이터를 업로드하면 표시됩니다</div>
+    </div>
+    <!-- 차트 -->
+    <div id="tmpl-chart-wrap" style="display:none;margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text3)">그룹:</span>
+          <button id="tmpl-chart-mode-tmpl"  onclick="setTmplChartMode('tmpl')"  class="btn" style="font-size:11px;background:#1a1917;color:#fff">템플릿별</button>
+          <button id="tmpl-chart-mode-kw"    onclick="setTmplChartMode('kw')"    class="btn" style="font-size:11px">키워드</button>
+          <button id="tmpl-chart-mode-skip"  onclick="setTmplChartMode('skip')"  class="btn" style="font-size:11px">스킵/논스킵</button>
+          <button id="tmpl-chart-mode-sec"   onclick="setTmplChartMode('sec')"   class="btn" style="font-size:11px">초수별</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--text3)">기간:</span>
+          <button id="tmpl-chart-cumul-0" onclick="setTmplChartCumul(0)" class="btn" style="font-size:11px;background:#1a1917;color:#fff">하루치</button>
+          <button id="tmpl-chart-cumul-1" onclick="setTmplChartCumul(1)" class="btn" style="font-size:11px">누적</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--text3)">지표:</span>
+          <button id="tmpl-chart-metric-spend" onclick="setTmplChartMetric('spend')" class="btn" style="font-size:11px;background:#1a1917;color:#fff">집행금액</button>
+          <button id="tmpl-chart-metric-imps"  onclick="setTmplChartMetric('imps')"  class="btn" style="font-size:11px">노출수</button>
+        </div>
+      </div>
+      <div style="position:relative"><canvas id="ch-tmpl"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">일별 소진 추이 — KBO / 예약형</div>
     <div style="position:relative;height:220px"><canvas id="ch-trend"></canvas></div>
     <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text3)">
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(255,21,60,0.7)"></span>정상 소진</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(255,21,60,0.35)"></span>미소진 (목표 90% 미만)</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(245,158,11,0.7)"></span>과소진 (목표 110% 초과)</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(37,99,235,0.7)"></span>KBO 실제 소진</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(255,21,60,0.6)"></span>예약형 실제 소진</span>
     </div>
   </div>
 
@@ -1151,6 +1251,161 @@
 </div>
 </div>
 
+<!-- 사용 가이드 -->
+<div id="sec-guide" class="sec">
+  <div class="card">
+    <div class="card-title">📖 TAS 모니터링 대시보드 — 사용 가이드</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">이 앱은 KBO·예약형 광고 캠페인의 예산 소진 현황을 자동 분석하고, 이상 신호를 빠르게 파악하기 위한 모니터링 도구예요.</div>
+
+    <!-- 시작하기 -->
+    <details open style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">🚀 시작하기</summary>
+      <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">① XLSX 업로드</strong> — 우측 상단 <code style="background:var(--surface2);padding:1px 6px;border-radius:4px">XLSX 업로드</code> 버튼으로 <strong>Campaign Dashboard v2.0</strong> 파일을 업로드해요. 업로드 즉시 모든 탭에 데이터가 반영돼요.</div>
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">② 시트 불러오기</strong> — Google Sheets URL을 등록하면 자동 갱신이 가능해요. 상단 <code style="background:var(--surface2);padding:1px 6px;border-radius:4px">시트 불러오기</code> 버튼에서 설정해요.</div>
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">③ 오전/오후 모드</strong> — <strong>오전 모드</strong>는 전일 소진 기준, <strong>오후 모드</strong>는 당일+전일 소진 기준으로 일예산 이상 알럿이 작동해요. 오후에 업무 시작 시 오후 모드로 전환해요.</div>
+      </div>
+    </details>
+
+    <!-- 탭별 설명 -->
+    <details open style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">📑 탭별 기능 설명</summary>
+      <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
+        <div style="display:grid;gap:10px">
+          <div style="border-left:3px solid var(--blue);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">📊 개요</div>
+            <div>전체 캠페인의 당일·전일·누적 집행금액과 노출수를 KBO / 예약형으로 구분해서 한눈에 볼 수 있어요. 일별 소진 추이 차트도 여기서 확인해요.</div>
+          </div>
+          <div style="border-left:3px solid var(--red);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">🚨 알럿</div>
+            <div>이상 감지된 캠페인을 유형별로 묶어서 보여줘요. 체크박스로 확인 처리하고, 슬랙 복사 버튼으로 팀에 공유할 수 있어요. 알럿 순서: 상태오류 → 초과달성율 → 종료임박 → 과소진 → 일예산 이상 순이에요.</div>
+          </div>
+          <div style="border-left:3px solid var(--green);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">📋 캠페인 현황</div>
+            <div>전체 캠페인 목록이에요. 상태·우선순위·알럿 유형으로 필터링하고, 컬럼 클릭으로 정렬할 수 있어요. 루틴 정렬 버튼으로 우선순위 기준 자동 정렬도 가능해요.</div>
+          </div>
+          <div style="border-left:3px solid var(--amber);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">⚾ KBO 분석 요약 / 분석 상세 / 종합분석</div>
+            <div><strong>분석 요약</strong>: 캠페인별 목표달성율·실제달성율·잔여일·권장 일예산을 한 표로 비교해요.<br>
+            <strong>분석 상세</strong>: 경기일 기준 목표달성율과 권장 일예산을 요일별 배분 비중까지 반영해서 계산해요.<br>
+            <strong>종합분석</strong>: 예산 건강도를 위험·소진 느림·소진 빠름·정상으로 분류해서 보여줘요.</div>
+          </div>
+          <div style="border-left:3px solid var(--blue);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">🧮 보너스 계산기</div>
+            <div>캠페인 집행예산 기준으로 잔여일에 필요한 보너스율을 역산해요. 3가지 모드: 목표 일예산→보너스율 / 보너스율 입력→일예산 / 보너스 금액→일예산.</div>
+          </div>
+          <div style="border-left:3px solid var(--blue);padding:8px 12px;background:var(--surface2);border-radius:0 6px 6px 0">
+            <div style="font-weight:700;color:var(--text);margin-bottom:2px">📐 보너스율 배분 계산기</div>
+            <div>지난주 전체 imps를 기준으로 하우스·Slate AD·7이닝 등 선집행분을 차감한 뒤, 잔여 imps를 캠페인별 현재 잔여 imps 비중으로 배분해요. 캠페인별 이번주 권장 일예산과 보너스율을 한 번에 확인할 수 있어요. CSV 다운로드도 가능해요.</div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 알럿 유형 설명 -->
+    <details style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">🚨 알럿 유형 상세 설명</summary>
+      <div style="padding:14px;font-size:12px;color:var(--text2)">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:6px 10px;font-size:11px;color:var(--text3);font-weight:600">유형</th>
+              <th style="text-align:left;padding:6px 10px;font-size:11px;color:var(--text3);font-weight:600">심각도</th>
+              <th style="text-align:left;padding:6px 10px;font-size:11px;color:var(--text3);font-weight:600">의미 및 조치</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--red)">상태 오류</td><td style="padding:7px 10px">🔴 긴급</td><td style="padding:7px 10px;line-height:1.6">캠페인이 ACTIVE가 아닌 상태예요. 즉시 확인이 필요해요.</td></tr>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--red)">초과달성율 양수</td><td style="padding:7px 10px">🔴 긴급</td><td style="padding:7px 10px;line-height:1.6">기간달성율 대비 노출소진율이 낮아요. 계약 보장 노출량에 미달할 위험이 있어요. (KBO 제외)</td></tr>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--red)">종료 임박</td><td style="padding:7px 10px">🔴 긴급</td><td style="padding:7px 10px;line-height:1.6">캠페인 종료일이 설정 기준일 이내예요. 예산 소진율과 잔여 노출량을 점검해 주세요.</td></tr>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--red)">예산 조기소진</td><td style="padding:7px 10px">🔴 긴급</td><td style="padding:7px 10px;line-height:1.6">잔여일이 남았는데 예산이 100% 소진됐어요. 남은 기간 노출이 0이 될 수 있어요.</td></tr>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--red)">D-1 당일/노출 미달</td><td style="padding:7px 10px">🔴 긴급</td><td style="padding:7px 10px;line-height:1.6">마지막 날인데 당일 소진 또는 누적 노출이 목표에 미달이에요.</td></tr>
+            <tr style="border-bottom:1px solid var(--border2)"><td style="padding:7px 10px;font-weight:600;color:var(--amber)">과소진</td><td style="padding:7px 10px">🟡 주의</td><td style="padding:7px 10px;line-height:1.6">예산달성율이 기간달성율보다 설정 기준(%p) 이상 높아요. 예산이 빨리 소진되고 있어요.</td></tr>
+            <tr><td style="padding:7px 10px;font-weight:600;color:var(--text3)">일예산 이상</td><td style="padding:7px 10px">🟡 참고</td><td style="padding:7px 10px;line-height:1.6">당일 또는 전일 소진이 일예산 대비 설정 비율(기본 70%) 이하예요. 양이 많을 수 있으므로 마지막에 확인해요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- KBO 분석 상세 가이드 -->
+    <details style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">⚾ KBO 분석 — 설정 방법</summary>
+      <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">① 상품 설정</strong> — KBO 탭 → 상품 설정에서 각 상품의 템플릿명·구좌단가·CPM·보장 imps를 입력해요. Dashboard 파일의 상품 템플릿명과 정확히 일치해야 매칭돼요.</div>
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">② 경기 없는 날 설정</strong> — 달력에서 경기가 없는 날짜를 클릭해서 제외일로 지정해요. 총 경기일 계산과 권장 일예산 산정에 반영돼요.</div>
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">③ 설정 저장/불러오기</strong> — 상품 설정과 경기 제외일은 💾 설정 내보내기로 JSON 파일로 저장해두고, 다음 번에 📂 설정 불러오기로 복원할 수 있어요.</div>
+        <div style="margin-bottom:8px"><strong style="color:var(--blue-text)">④ 보너스율 배분 계산기</strong> — 지난주 전체 imps 입력 → 하우스·Slate AD·7이닝·퍼스트뷰 선집행분 차감 → 잔여 imps가 캠페인별로 자동 배분돼요. 잔여 imps 비중(잔여예산 ÷ CPM)에 비례해서 배분되므로, 소진이 빠른 캠페인일수록 배분 imps가 적어지는 구조예요.</div>
+      </div>
+    </details>
+
+    <!-- 보너스율 계산 방식 -->
+    <details style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">🧮 보너스율 계산 방식</summary>
+      <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px 14px;font-family:monospace;font-size:11px;line-height:2;margin-bottom:10px">
+          보너스 금액 = 구좌단가 × 보너스율%<br>
+          총예산 = 구좌단가 + 보너스 금액<br>
+          잔여예산 = 총예산 − 집행예산<br>
+          일예산 = 잔여예산 ÷ 잔여일
+        </div>
+        <div style="margin-bottom:6px">• <strong>보너스율 기준 캠페인</strong>: 보너스 금액이 구좌단가의 정수% — 예) 구좌단가 7천만 × 100% = 보너스 7천만</div>
+        <div style="margin-bottom:6px">• <strong>금액 기준 캠페인</strong>: 임의의 보너스 금액으로 입력된 캠페인 — 배분 계산기에서 주황색으로 표시되며, 금액과 함께 환산 보너스율도 함께 보여줘요</div>
+        <div>• <strong>목표 달성율</strong>: 경기 없는 날 제외한 경과 경기일 ÷ 총 경기일 (오늘 포함)</div>
+      </div>
+    </details>
+
+    <div style="font-size:11px;color:var(--text3);text-align:center;padding:8px">문의 또는 기능 개선 요청은 담당 운영팀에 전달해주세요 😊</div>
+  </div>
+</div>
+
+<!-- 주간 리포트 -->
+<div id="sec-weekly" class="sec">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">📋 주간 리포트 자동 생성</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="generateWeeklyReport()" style="font-size:12px">⚡ 리포트 생성</button>
+        <button class="btn" onclick="copyWeeklyReport()" style="font-size:12px">📋 복사</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">리포트 기준 주차</label>
+        <input type="text" id="wr-week" placeholder="예: 4/7~4/13" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">작성자</label>
+        <input type="text" id="wr-author" placeholder="예: 홍길동" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px">
+      </div>
+    </div>
+    <div id="wr-output" style="background:var(--surface2);border-radius:8px;padding:14px;font-size:12px;line-height:1.8;white-space:pre-wrap;font-family:inherit;min-height:200px;color:var(--text2)">리포트 생성 버튼을 클릭하면 슬랙 복사용 리포트가 생성됩니다.</div>
+  </div>
+
+  <!-- 이전 주 비교 -->
+  <div class="card">
+    <div class="card-title">📊 이전 주 데이터 비교</div>
+    <div style="margin-bottom:12px;font-size:12px;color:var(--text3)">이전 주 Dashboard 파일을 업로드하면 이번 주와 나란히 비교해요.</div>
+    <label class="btn" style="cursor:pointer;display:inline-block">
+      📂 이전 주 파일 업로드
+      <input type="file" accept=".xlsx,.xls" onchange="loadPrevWeekFile(this)" style="display:none">
+    </label>
+    <div id="prev-week-status" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
+    <div id="prev-week-compare" style="margin-top:14px"></div>
+  </div>
+
+  <!-- 알럿 이력 -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">📜 알럿 이력</div>
+      <button class="btn" onclick="clearAlertHistory()" style="font-size:11px;color:var(--text3)">🗑 이력 초기화</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">파일 업로드 시 알럿 상태가 자동 기록돼요. 최근 14일치 이력을 보여줘요.</div>
+    <div id="alert-history-list">
+      <div class="empty" style="padding:1rem;font-size:12px">기록된 이력이 없어요</div>
+    </div>
+  </div>
+</div>
+
 <!-- Slack -->
 <div id="sec-slk" class="sec">
   <div class="card">
@@ -1212,7 +1467,6 @@ updateModeBtnUI();
 let _ovScrollY = 0;
 
 function go(id,el){
-  // 개요 탭 떠날 때 스크롤 위치 저장
   const currentOn = document.querySelector('.sec.on');
   if(currentOn && currentOn.id === 'sec-ov') {
     _ovScrollY = window.scrollY;
@@ -1225,13 +1479,8 @@ function go(id,el){
   if(id==='kbo-analysis') renderKBOAnalysis();
   if(id==='kbo-summary') renderKBOSummary();
   if(id==='kbo-insight') renderKBOInsight();
-  if(id==='kbo-alloc') alCalc();
-  // 개요 탭으로 돌아올 때 스크롤 위치 복원
-  if(id==='ov') {
-    requestAnimationFrame(() => window.scrollTo(0, _ovScrollY));
-  } else {
-    window.scrollTo(0, 0);
-  }
+  if(id==='kbo-alloc'){ _alLoad(); alCalc(); }
+  if(id==='weekly'){ generateWeeklyReport(); renderPrevWeekCompare(); renderAlertHistory(); }
 }
 
 function parseDate(v){
@@ -1638,8 +1887,14 @@ function classifyRow(r){
   const as=[];
 
   // 1. 상태 오류 (PAUSED 등)
-  if(r.status&&r.status!=='ACTIVE'&&r.status!=='COMPLETED')
-    as.push({sev:'er',type:'status',msg:`캠페인 상태: ${r.status}`});
+  if(r.status&&r.status!=='ACTIVE'&&r.status!=='COMPLETED'){
+    // 이틀 이상 집행금액이 없으면 noSpend 플래그 — 회색으로 표시
+    const dateKeys = Object.keys(r.dailyByDate||{});
+    const recentZeroDays = dateKeys.length >= 2
+      ? dateKeys.slice(-2).every(k => (r.dailyByDate[k]||0) === 0)
+      : (r.dailyToday === 0 || r.dailyToday === null) && (r.dailyPrev === 0 || r.dailyPrev === null);
+    as.push({sev:'er', type:'status', msg:`캠페인 상태: ${r.status}`, noSpend: recentZeroDays});
+  }
 
   // 2. 미소진 → 초과달성율 양수와 동일 개념이므로 제거 (초과달성율 양수 알럿으로 통합)
 
@@ -1659,7 +1914,7 @@ function classifyRow(r){
 
   // 6. 종료 임박 (잔여일 ≤ thExp, 예산 100% 미만)
   if(r.daysLeft!==null&&r.daysLeft>=0&&r.daysLeft<=thExp&&r.daysLeft>1&&r.status==='ACTIVE'&&r.budgetRate!==null&&r.budgetRate<100)
-    as.push({sev:'wn',type:'exp',msg:`종료 임박 D-${r.daysLeft}: 예산달성 ${fmtP(r.budgetRate)}, 잔여 ${fmtW(r.remaining)}`});
+    as.push({sev:'er',type:'exp',msg:`종료 임박 D-${r.daysLeft}: 예산달성 ${fmtP(r.budgetRate)}%(노출 ${fmtP(r.impRate)}%) vs 기간달성 ${fmtP(r.periodRate)}%, 잔여 ${fmtW(r.remaining)}`});
 
   // 7. 잔여일 1일 특수 알럿
   if(r.daysLeft===1&&r.status==='ACTIVE'){
@@ -1687,23 +1942,32 @@ function classifyRow(r){
     // 당일 체크 — 오후 모드에서만
     if(!isMorning&&r.dailyToday!==null){
       if(r.dailyToday===0)
-        as.push({sev:'er',type:'daily',msg:`당일(${r.dailyTodayLabel}) 소진 0원`});
+        as.push({sev:'er',type:'daily',msg:`당일(${r.dailyTodayLabel}) 소진 0원`,kbo:isKBO(r)});
       else if(r.dailyToday<thr)
-        as.push({sev:'er',type:'daily',msg:`당일(${r.dailyTodayLabel}) 소진 ${fmtW(r.dailyToday)} — 일예산 ${fmtW(refB)} 대비 ${((r.dailyToday/refB)*100).toFixed(1)}%`});
+        as.push({sev:'er',type:'daily',msg:`당일(${r.dailyTodayLabel}) 소진 ${fmtW(r.dailyToday)} — 일예산 ${fmtW(refB)} 대비 ${((r.dailyToday/refB)*100).toFixed(1)}%`,kbo:isKBO(r)});
     }
     // 전일 체크 — 항상
     if(r.dailyPrev!==null){
       if(r.dailyPrev===0)
-        as.push({sev:'er',type:'daily',msg:`전일(${r.dailyPrevLabel}) 소진 0원`});
+        as.push({sev:'er',type:'daily',msg:`전일(${r.dailyPrevLabel}) 소진 0원`,kbo:isKBO(r)});
       else if(r.dailyPrev<thr)
-        as.push({sev:'er',type:'daily',msg:`전일(${r.dailyPrevLabel}) 소진 ${fmtW(r.dailyPrev)} — 일예산 ${fmtW(refB)} 대비 ${((r.dailyPrev/refB)*100).toFixed(1)}%`});
+        as.push({sev:'er',type:'daily',msg:`전일(${r.dailyPrevLabel}) 소진 ${fmtW(r.dailyPrev)} — 일예산 ${fmtW(refB)} 대비 ${((r.dailyPrev/refB)*100).toFixed(1)}%`,kbo:isKBO(r)});
     }
   }
+  // 9. Prime Time 조기 소진 — 오후 5시 전에 당일 소진이 찍히면 알럿
+  // Prime Time 캠페인은 17:00 이후에만 소진되어야 하므로
+  if(r.status==='ACTIVE' && r.tmpl && r.tmpl.toLowerCase().includes('prime time')) {
+    const nowHour = new Date().getHours();
+    if(nowHour < 17 && r.dailyToday !== null && r.dailyToday > 0) {
+      as.push({sev:'er', type:'primetime_early',
+        msg:`Prime Time 조기 소진 감지 — 현재 ${nowHour}시에 당일 소진 ${fmtW(r.dailyToday)} 찍힘 (17:00 이전 소진 이상)`});
+    }
+  }
+
   return as;
 }
-
-function alertLabel(t){return{under:'미소진',over:'과소진',status:'상태오류',exp:'종료임박',overrate:'초과달성율(중요)',budget100:'예산조기소진',lastday_imp:'D-1 노출미달',lastday_total:'D-1 총노출미달',daily:'일예산이상',lastday_zero:'D-1 당일미소진'}[t]||'기타';}
-function alertBadgeCls(a){return{under:'badge-er',over:'badge-wn',status:'badge-er',exp:'badge-wn',overrate:'badge-er',budget100:'badge-er',lastday_imp:'badge-er',lastday_total:'badge-er',daily:'badge-er',lastday_zero:'badge-er'}[a.type]||'badge-gr';}
+function alertLabel(t){return{under:'미소진',over:'과소진',status:'상태오류',exp:'종료임박',overrate:'초과달성율(중요)',budget100:'예산조기소진',lastday_imp:'D-1 노출미달',lastday_total:'D-1 총노출미달',daily:'일예산이상',lastday_zero:'D-1 당일미소진',primetime_early:'Prime Time 조기소진'}[t]||'기타';}
+function alertBadgeCls(a){return{under:'badge-er',over:'badge-wn',status:'badge-er',exp:'badge-wn',overrate:'badge-er',budget100:'badge-er',lastday_imp:'badge-er',lastday_total:'badge-er',daily:'badge-er',lastday_zero:'badge-er',primetime_early:'badge-er'}[a.type]||'badge-gr';}
 
 function getRowStatus(r){
   const as=classifyRow(r);
@@ -2446,7 +2710,7 @@ function _renderHealthSection(analysed){
       const overdue=a.estEndDate&&a.r.endDate&&a.estEndDate<a.r.endDate;
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:6px 8px"><span style="font-size:10px;padding:2px 6px;border-radius:10px;border:1px solid;${hColor[a.health]}">${hLabel[a.health]}</span></td>
-        <td style="padding:6px 8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(a.r.sub||'')+' '+((a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,''))}">${(a.r.sub||'—')}<br><span style="font-size:10px;color:var(--text3)">${(a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}</span></td>
+        <td style="padding:6px 8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(a.r.sub||'')+' '+((a.r.tmpl||'')).replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}">${(a.r.sub||'—')}<br><span style="font-size:10px;color:var(--text3)">${(a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}</span></td>
         <td style="padding:6px 8px;text-align:right">${fmtP(a.targetAchievePct)}</td>
         <td style="padding:6px 8px;text-align:right">${fmtP(a.costAchievePct)}</td>
         <td style="padding:6px 8px;text-align:right;${diffColor}">${diff>=0?'+':''}${fmtP(diff)}</td>
@@ -2479,7 +2743,7 @@ function _renderBonusSection(analysed){
       const dColor=diff>0?'color:var(--red)':diff<0?'color:var(--green)':'color:var(--text3)';
       const dStr=diff===0?'✅':`${diff>0?'+':''}${diff}%p`;
       return `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(a.r.sub||'')+' '+((a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,''))}">${(a.r.sub||'—')}<br><span style="font-size:10px;color:var(--text3)">${(a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}</span></td>
+        <td style="padding:6px 8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(a.r.sub||'')+' '+((a.r.tmpl||'')).replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}">${(a.r.sub||'—')}<br><span style="font-size:10px;color:var(--text3)">${(a.r.tmpl||'').replace(/^\[T ONLY(_JBP)?\]\s*/i,'').replace(/^\[통합[^\]]*\]\s*/,'')}</span></td>
         <td style="padding:6px 8px;text-align:right">${a.curBonusPct}%</td>
         <td style="padding:6px 8px;text-align:right;font-weight:700">${a.bonusRate}%</td>
         <td style="padding:6px 8px;text-align:right;${dColor};font-weight:600">${dStr}</td>
@@ -3376,21 +3640,58 @@ function renderOvKBOMetrics(){
   const genRows=ST.rows.filter(r=>!isKBO(r));
   const kboAlerts=ST.alerts.filter(a=>kboRows.some(r=>r.camp===a.camp));
   const genAlerts=ST.alerts.filter(a=>genRows.some(r=>r.camp===a.camp));
-  // KBO
-  const kboActive=kboRows.filter(r=>r.status==='ACTIVE').length;
-  document.getElementById('kbo-tag-count').textContent=`${kboActive}개 활성 / 전체 ${kboRows.length}개`;
-  document.getElementById('kbo-spend').textContent=fmtW(kboRows.reduce((a,r)=>a+(r.spend||0),0));
-  document.getElementById('kbo-imp').textContent=fmtN(kboRows.reduce((a,r)=>a+(r.impressions||0),0));
-  document.getElementById('kbo-total-budget').textContent=fmtW(kboRows.reduce((a,r)=>a+(r.totalBudget||0),0));
+
+  // ACTIVE 기준
+  const kboActive=kboRows.filter(r=>r.status==='ACTIVE');
+  const genActive=genRows.filter(r=>r.status==='ACTIVE');
+
+  // 당일·전일 레이블 (첫 번째 ACTIVE 캠페인 기준)
+  const kboTodayLabel = kboActive.find(r=>r.dailyTodayLabel)?.dailyTodayLabel || '';
+  const kboPrevLabel  = kboActive.find(r=>r.dailyPrevLabel)?.dailyPrevLabel   || '';
+  const genTodayLabel = genActive.find(r=>r.dailyTodayLabel)?.dailyTodayLabel || '';
+  const genPrevLabel  = genActive.find(r=>r.dailyPrevLabel)?.dailyPrevLabel   || '';
+
+  // KBO 집계
+  const kboTodaySpend = kboActive.reduce((a,r)=>a+(r.dailyToday||0),0);
+  const kboPrevSpend  = kboActive.reduce((a,r)=>a+(r.dailyPrev||0),0);
+  const kboTotalSpend = kboActive.reduce((a,r)=>a+(r.spend||0),0);
+  const kboTotalImp   = kboActive.reduce((a,r)=>a+(r.impressions||0),0);
+  // 노출수 당일·전일: dailyToday/dailyPrev는 금액이라 CPM으로 환산
+  const kboTodayImp = kboActive.reduce((a,r)=>a+((r.dailyToday||0)/(r.cpx||14000)*1000),0);
+  const kboPrevImp  = kboActive.reduce((a,r)=>a+((r.dailyPrev||0)/(r.cpx||14000)*1000),0);
+
+  document.getElementById('kbo-tag-count').textContent=`${kboActive.length}개 활성 / 전체 ${kboRows.length}개`;
+  document.getElementById('kbo-today-spend').textContent=fmtW(kboTodaySpend);
+  document.getElementById('kbo-today-label').textContent=kboTodayLabel?`${kboTodayLabel} 기준`:'';
+  document.getElementById('kbo-prev-spend').textContent=fmtW(kboPrevSpend);
+  document.getElementById('kbo-prev-label').textContent=kboPrevLabel?`${kboPrevLabel} 기준`:'';
+  document.getElementById('kbo-spend').textContent=fmtW(kboTotalSpend);
+  document.getElementById('kbo-today-imp').textContent=fmtN(Math.round(kboTodayImp));
+  document.getElementById('kbo-prev-imp').textContent=fmtN(Math.round(kboPrevImp));
+  document.getElementById('kbo-imp').textContent=fmtN(kboTotalImp);
+  document.getElementById('kbo-total-budget').textContent=fmtW(kboActive.reduce((a,r)=>a+(r.totalBudget||0),0));
   const kboAlertEl=document.getElementById('kbo-alerts');
   kboAlertEl.textContent=kboAlerts.length>0?`${kboAlerts.length}건`:'이상 없음';
   kboAlertEl.style.color=kboAlerts.length>0?'var(--red)':'var(--green)';
-  // 예약형
-  const genActive=genRows.filter(r=>r.status==='ACTIVE').length;
-  document.getElementById('gen-tag-count').textContent=`${genActive}개 활성 / 전체 ${genRows.length}개`;
-  document.getElementById('gen-spend').textContent=fmtW(genRows.reduce((a,r)=>a+(r.spend||0),0));
-  document.getElementById('gen-imp').textContent=fmtN(genRows.reduce((a,r)=>a+(r.impressions||0),0));
-  document.getElementById('gen-total-budget').textContent=fmtW(genRows.reduce((a,r)=>a+(r.totalBudget||0),0));
+
+  // 예약형 집계
+  const genTodaySpend = genActive.reduce((a,r)=>a+(r.dailyToday||0),0);
+  const genPrevSpend  = genActive.reduce((a,r)=>a+(r.dailyPrev||0),0);
+  const genTotalSpend = genActive.reduce((a,r)=>a+(r.spend||0),0);
+  const genTotalImp   = genActive.reduce((a,r)=>a+(r.impressions||0),0);
+  const genTodayImp = genActive.reduce((a,r)=>a+((r.dailyToday||0)/(r.cpx||14000)*1000),0);
+  const genPrevImp  = genActive.reduce((a,r)=>a+((r.dailyPrev||0)/(r.cpx||14000)*1000),0);
+
+  document.getElementById('gen-tag-count').textContent=`${genActive.length}개 활성 / 전체 ${genRows.length}개`;
+  document.getElementById('gen-today-spend').textContent=fmtW(genTodaySpend);
+  document.getElementById('gen-today-label').textContent=genTodayLabel?`${genTodayLabel} 기준`:'';
+  document.getElementById('gen-prev-spend').textContent=fmtW(genPrevSpend);
+  document.getElementById('gen-prev-label').textContent=genPrevLabel?`${genPrevLabel} 기준`:'';
+  document.getElementById('gen-spend').textContent=fmtW(genTotalSpend);
+  document.getElementById('gen-today-imp').textContent=fmtN(Math.round(genTodayImp));
+  document.getElementById('gen-prev-imp').textContent=fmtN(Math.round(genPrevImp));
+  document.getElementById('gen-imp').textContent=fmtN(genTotalImp);
+  document.getElementById('gen-total-budget').textContent=fmtW(genActive.reduce((a,r)=>a+(r.totalBudget||0),0));
   const genAlertEl=document.getElementById('gen-alerts');
   genAlertEl.textContent=genAlerts.length>0?`${genAlerts.length}건`:'이상 없음';
   genAlertEl.style.color=genAlerts.length>0?'var(--red)':'var(--green)';
@@ -3499,8 +3800,8 @@ function renderSubTable(type){
     html+=`<tr style="${rowBg}">
       <td class="col-sticky" style="left:0">${tagBtn}</td>
       <td class="col-sticky" style="left:60px"><span class="badge ${sBadge}">${r.status||'—'}</span></td>
-      <td class="col-sticky" style="left:110px;min-width:240px;max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}</td>
-      <td class="col-sticky" style="left:350px;min-width:220px;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
+      <td class="col-sticky" style="left:110px;max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}</td>
+      <td class="col-sticky" style="left:270px;max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
       <td class="col-sticky" style="left:410px;text-align:center">${r.priority!==null?r.priority:'—'}</td>
       <td class="col-sticky" style="left:470px;text-align:right">${r.cpx!==null?fmtW(r.cpx):'—'}</td>
       <td class="col-sticky col-sticky-last" style="left:560px;text-align:right">${fmtW(r.totalBudget)}</td>
@@ -3528,7 +3829,7 @@ function renderSubTable(type){
 function processAll(){
   initKBOTags();runAlerts();renderMetrics();renderAlerts();
   renderTable();renderSubTable('kbo');renderSubTable('gen');
-  renderOvKBOMetrics();renderCharts();renderTrendChart();
+  renderOvKBOMetrics();renderCharts();renderTrendChart();renderTemplateBreakdown();
   renderExpiring();renderAlertTypeSummary();renderBadge();
   updatePreview();populatePriorityFilter();
   // 렌더링 완료 후 KBO 요약 갱신
@@ -3539,6 +3840,10 @@ function reprocess(){
   ST.rows.forEach(r => { delete r.isKBO; });
   initKBOTags();
   runAlerts();renderAlerts();renderTable();renderSubTable('kbo');renderSubTable('gen');renderOvKBOMetrics();renderBadge();renderExpiring();updatePreview();
+  renderTemplateBreakdown();renderTrendChart();
+  renderHeatmap();
+  renderSpeedForecast();
+  _saveAlertHistory();
   if(typeof alCalc==='function') alCalc();
 }
 
@@ -3618,16 +3923,17 @@ function renderAlerts(){
 
   // 카테고리 정의: [type, 표시명, 심각도색]
   const categories=[
-    {type:'status',    label:'상태 오류',        icon:'🔴', sev:'er', tip:'캠페인이 ACTIVE가 아닌 상태(PAUSED 등)로 정상 노출이 안 되고 있을 수 있어요.'},
-    {type:'under',     label:'미소진',           icon:'🔴', sev:'er', tip:'노출소진율이 기간달성율보다 설정한 기준(%p) 이상 낮아요. 캠페인이 목표 대비 노출이 부족하게 진행되고 있어요.'},
-    {type:'budget100', label:'예산 조기소진',    icon:'🔴', sev:'er', tip:'잔여일이 남아있는데 예산이 이미 100% 소진됐어요. 남은 기간에 노출이 0이 될 수 있어요.'},
-    {type:'lastday_zero', label:'D-1 당일 미소진', icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 예산은 달성했지만 당일 소진 금액이 0원이거나 기준 이하예요. 마지막날 노출이 안 나갈 수 있어요.'},
-    {type:'lastday_imp',  label:'D-1 노출미달',  icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 예산은 달성했지만 노출소진율이 100% 미달이에요.'},
-    {type:'lastday_total',label:'D-1 총노출미달',icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 총 집행 노출수가 계약한 총노출량 목표에 미달이에요.'},
-    {type:'daily',     label:'일예산 이상',      icon:'🔴', sev:'er', tip:'당일 또는 전일 소진 금액이 일예산의 설정한 비율(기본 70%) 이하예요. 하루 목표 소진이 크게 부족한 상태예요.'},
-    {type:'over',      label:'과소진',           icon:'🟡', sev:'wn', tip:'예산달성율이 기간달성율보다 설정한 기준(%p) 이상 높아요. 예산이 너무 빠르게 소진되고 있어요.'},
-    {type:'overrate',  label:'초과달성율 양수',  icon:'🔴', sev:'er', tip:'초과달성율이 양수예요. 계약 노출량 대비 초과 노출이 발생하고 있어요. (KBO 캠페인 제외)'},
-    {type:'exp',       label:'종료 임박',        icon:'🟡', sev:'wn', tip:'캠페인 종료일이 설정한 기준일 이내로 다가왔어요. 예산 소진 상황을 점검해 주세요.'},
+    {type:'status',      label:'상태 오류',        icon:'🔴', sev:'er', tip:'캠페인이 ACTIVE가 아닌 상태(PAUSED 등)로 정상 노출이 안 되고 있을 수 있어요.'},
+    {type:'primetime_early', label:'Prime Time 조기소진', icon:'🔴', sev:'er', tip:'오후 5시 이전에 Prime Time 캠페인의 당일 소진이 찍혔어요. 17:00 이전 소진은 비정상 노출일 수 있어요.'},
+    {type:'overrate',    label:'초과달성율 양수',  icon:'🔴', sev:'er', tip:'초과달성율이 양수예요. 계약 노출량 대비 초과 노출이 발생하고 있어요. (KBO 캠페인 제외)'},
+    {type:'exp',         label:'종료 임박',        icon:'🔴', sev:'er', tip:'캠페인 종료일이 설정한 기준일 이내로 다가왔어요. 예산 소진 상황을 점검해 주세요.'},
+    {type:'budget100',   label:'예산 조기소진',    icon:'🔴', sev:'er', tip:'잔여일이 남아있는데 예산이 이미 100% 소진됐어요. 남은 기간에 노출이 0이 될 수 있어요.'},
+    {type:'lastday_zero',label:'D-1 당일 미소진',  icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 예산은 달성했지만 당일 소진 금액이 0원이거나 기준 이하예요.'},
+    {type:'lastday_imp', label:'D-1 노출미달',     icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 예산은 달성했지만 노출소진율이 100% 미달이에요.'},
+    {type:'lastday_total',label:'D-1 총노출미달',  icon:'🔴', sev:'er', tip:'마지막날(D-1)인데 총 집행 노출수가 계약한 총노출량 목표에 미달이에요.'},
+    {type:'under',       label:'미소진',           icon:'🔴', sev:'er', tip:'노출소진율이 기간달성율보다 설정한 기준(%p) 이상 낮아요. 목표 대비 노출이 부족한 상태예요.'},
+    {type:'over',        label:'과소진',           icon:'🟡', sev:'wn', tip:'예산달성율이 기간달성율보다 설정한 기준(%p) 이상 높아요. 예산이 너무 빠르게 소진되고 있어요.'},
+    {type:'daily',       label:'일예산 이상',      icon:'🟡', sev:'wn', tip:'당일 또는 전일 소진 금액이 일예산의 설정한 비율(기본 70%) 이하예요. 비교적 경미한 알럿이에요.'},
   ];
 
   const grouped={};
@@ -3636,21 +3942,48 @@ function renderAlerts(){
     grouped[a.type].push(a);
   });
 
+  // daily 알럿 KBO 포함 여부 상태 (기본: 제외)
+  const showDailyKBO = document.getElementById('daily-kbo-toggle')?.dataset.on === '1';
+
   let html='';
   const checkedAlrt=loadChecked('alrt');
   categories.forEach(cat=>{
-    const items=grouped[cat.type];
+    let items=grouped[cat.type];
     if(!items||!items.length) return;
+
+    // daily 알럿 — KBO 기본 제외, 토글로 포함/제외
+    if(cat.type==='daily' && !showDailyKBO) {
+      items = items.filter(a => !a.kbo);
+      if(!items.length) return;
+    }
+
     const borderColor=cat.sev==='er'?'var(--red)':'var(--yellow)';
     const bgColor=cat.sev==='er'?'rgba(192,57,43,0.05)':'rgba(212,121,10,0.05)';
     const badgeCls=cat.sev==='er'?'badge-er':'badge-wn';
     const uid=`alrt-sec-${cat.type}`;
     const checkedInCat=items.filter(a=>checkedAlrt.has(a.camp+'_'+a.type)).length;
+    const noSpendCnt = cat.type==='status' ? items.filter(a=>a.noSpend).length : 0;
+    const noSpendNote = noSpendCnt>0
+      ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">(이틀↑ 무집행 ${noSpendCnt}건 회색)</span>`
+      : '';
+
+    // daily 알럿 — KBO 포함/제외 토글 버튼
+    const kboTotal = cat.type==='daily' ? (grouped['daily']||[]).filter(a=>a.kbo).length : 0;
+    const kboToggle = cat.type==='daily'
+      ? `<button id="daily-kbo-toggle" data-on="${showDailyKBO?'1':'0'}"
+           onclick="event.stopPropagation();this.dataset.on=this.dataset.on==='1'?'0':'1';renderAlerts();"
+           style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;background:${showDailyKBO?'var(--blue)':'var(--surface2)'};color:${showDailyKBO?'#fff':'var(--text3)'};margin-left:4px;flex-shrink:0">
+           KBO ${showDailyKBO?'포함 ✓':'제외'} (${kboTotal}건)
+         </button>`
+      : '';
+
     html+=`<div style="margin-bottom:8px">
       <div onclick="toggleAlrtSec('${uid}')" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:${bgColor};border-left:3px solid ${borderColor};border-radius:0 6px 6px 0;cursor:pointer;user-select:none">
         <span style="font-size:13px">${cat.icon}</span>
         <span style="font-size:13px;font-weight:700;color:var(--text)">${cat.label}</span>
         <span title="${cat.tip}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.08);color:var(--text3);font-size:10px;font-weight:700;cursor:help;flex-shrink:0">?</span>
+        ${noSpendNote}
+        ${kboToggle}
         <span class="badge ${badgeCls}" style="margin-left:auto">${items.length}건</span>
         ${checkedInCat>0?`<span style="font-size:10px;color:var(--green)">✅ ${checkedInCat}/${items.length} 확인</span>`:''}
         <span id="${uid}-arrow" style="font-size:10px;color:var(--text3);margin-left:4px;transition:transform 0.15s">▲</span>
@@ -3659,11 +3992,21 @@ function renderAlerts(){
         ${items.map(a=>{
           const key=a.camp+'_'+a.type;
           const isDone=checkedAlrt.has(key);
-          return `<div class="ai" id="alrt-row-${key}" style="opacity:${isDone?'0.45':'1'}">
-            <div class="adot ${a.sev}"></div>
+          const isNoSpend = a.type==='status' && a.noSpend;
+          const rowStyle = isNoSpend
+            ? `opacity:${isDone?'0.3':'0.55'};filter:grayscale(0.6)`
+            : `opacity:${isDone?'0.45':'1'}`;
+          const noSpendBadge = isNoSpend
+            ? `<span style="font-size:10px;background:var(--surface2);color:var(--text3);border-radius:4px;padding:1px 6px;margin-left:4px;flex-shrink:0">이틀↑ 무집행</span>`
+            : '';
+          const kboBadge = a.type==='daily' && a.kbo
+            ? `<span style="font-size:9px;background:rgba(255,21,60,0.12);color:var(--red);border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle">KBO</span>`
+            : '';
+          return `<div class="ai" id="alrt-row-${key}" style="${rowStyle}">
+            <div class="adot ${isNoSpend?'':''}${a.sev}" style="${isNoSpend?'background:var(--text3);border-color:var(--text3)':''}"></div>
             <div style="flex:1">
-              <div class="ai-text"><strong>${a.camp}</strong></div>
-              <div class="ai-sub">${a.msg}</div>
+              <div class="ai-text"><strong>${a.camp}</strong>${noSpendBadge}${kboBadge}</div>
+              <div class="ai-sub" style="${isNoSpend?'color:var(--text3)':''}">${a.msg}</div>
             </div>
             <span class="alrt-check-btn${isDone?' done':''}" id="alrt-chk-${key}" onclick="event.stopPropagation();toggleAlrtCheck('${key}')" title="${isDone?'확인 취소':'확인 완료 표시'}">${isDone?'✅':'⬜'}</span>
           </div>`;
@@ -3704,7 +4047,7 @@ function copyAlertSlack(mode){
   const dateStr=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const modeLabel=mode==='er'?'🔴 오류 알럿':mode==='exp'?'⏰ 종료 임박 알럿':'📢 전체 알럿';
   const lines=[`${modeLabel} (${dateStr} 기준)`,`총 ${alerts.length}건`,''];
-  const catOrder=['status','budget100','overrate','lastday_zero','lastday_imp','lastday_total','daily','over','exp'];
+  const catOrder=['status','primetime_early','overrate','exp','budget100','lastday_zero','lastday_imp','lastday_total','under','over','daily'];
   catOrder.forEach(type=>{
     const items=grouped[type];
     if(!items||!items.length) return;
@@ -3833,11 +4176,11 @@ function renderTable(){
   // 고정 컬럼 left 오프셋 계산 (상태:50, 청약명:160, 상품템플릿:140, 우선순위:60, 과금단가:90 → 총예산까지)
   let html=`<table><thead><tr>
     <th class="col-sticky" style="left:0;min-width:50px;cursor:pointer;user-select:none" onclick="sortBy('status')">상태${si('status')}</th>
-    <th class="col-sticky" style="left:50px;min-width:240px">청약명</th>
-    <th class="col-sticky" style="left:290px;min-width:220px">상품템플릿</th>
-    <th class="col-sticky" style="left:510px;min-width:60px;text-align:center;cursor:pointer;user-select:none" onclick="sortBy('priority')">우선순위${si('priority')}</th>
-    <th class="col-sticky" style="left:570px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('cpx')">과금단가${si('cpx')}</th>
-    <th class="col-sticky col-sticky-last" style="left:660px;min-width:110px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('totalBudget')">총예산${si('totalBudget')}</th>
+    <th class="col-sticky" style="left:50px;min-width:160px;max-width:200px">청약명</th>
+    <th class="col-sticky" style="left:210px;min-width:140px">상품템플릿</th>
+    <th class="col-sticky" style="left:350px;min-width:60px;text-align:center;cursor:pointer;user-select:none" onclick="sortBy('priority')">우선순위${si('priority')}</th>
+    <th class="col-sticky" style="left:410px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('cpx')">과금단가${si('cpx')}</th>
+    <th class="col-sticky col-sticky-last" style="left:500px;min-width:110px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('totalBudget')">총예산${si('totalBudget')}</th>
     ${sh('startDate','시작일')}
     ${sh('endDate','종료일')}
     ${sh('daysLeft','잔여일')}
@@ -3875,9 +4218,9 @@ function renderTable(){
       : `<button onclick="toggleKBO('${r.id}',true)" style="font-size:10px;padding:1px 5px;border:1px solid var(--red-border);border-radius:3px;background:var(--red-bg);color:var(--red-text);cursor:pointer;margin-left:4px" title="KBO로 이동">→KBO</button>`;
     html+=`<tr style="${rowBg}">
       <td class="col-sticky" style="left:0"><span class="badge ${sBadge}">${r.status||'—'}</span></td>
-      <td class="col-sticky" style="left:50px;min-width:240px;max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}${tagBtn}</td>
-      <td class="col-sticky" style="left:290px;min-width:220px;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
-      <td class="col-sticky" style="left:510px;text-align:center">${r.priority!==null?r.priority:'—'}</td>
+      <td class="col-sticky" style="left:50px;max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}${tagBtn}</td>
+      <td class="col-sticky" style="left:210px;max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
+      <td class="col-sticky" style="left:350px;text-align:center">${r.priority!==null?r.priority:'—'}</td>
       <td class="col-sticky" style="left:410px;text-align:right">${r.cpx!==null?fmtW(r.cpx):'—'}</td>
       <td class="col-sticky col-sticky-last" style="left:500px;text-align:right">${fmtW(r.totalBudget)}</td>
       <td style="font-size:11px">${fmtDate(r.startDate)}</td>
@@ -3901,11 +4244,436 @@ function renderTable(){
   document.getElementById('camp-tbl').innerHTML=html;
 }
 
+function renderTemplateBreakdown() {
+  const el = document.getElementById('tmpl-breakdown-container');
+  const chartWrap = document.getElementById('tmpl-chart-wrap');
+  if(!el) return;
+
+  const sortBy   = document.getElementById('tmpl-sort')?.value   || 'spend';
+  const filterVal= document.getElementById('tmpl-filter')?.value || 'all';
+  const fW = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+  const fP = (n, d=1) => Number(n).toFixed(d);
+
+  // ACTIVE 캠페인
+  let rows = (ST.rows||[]).filter(r => r.status === 'ACTIVE');
+  if(filterVal === 'kbo') rows = rows.filter(r => isKBO(r));
+  else if(filterVal === 'gen') rows = rows.filter(r => !isKBO(r));
+
+  if(!rows.length) {
+    el.innerHTML = '<div class="empty" style="padding:1.5rem;font-size:12px">데이터를 업로드하면 표시됩니다</div>';
+    if(chartWrap) chartWrap.style.display = 'none';
+    return;
+  }
+
+  // 전일 레이블 (첫 번째 캠페인 기준)
+  const prevLabel = rows.find(r => r.dailyPrevLabel)?.dailyPrevLabel || '전일';
+
+  // 템플릿별 집계
+  const tmplMap = {};
+  rows.forEach(r => {
+    const rawTmpl = r.tmpl || '미분류';
+    // JBP는 별도 표시, 나머지 접두사 제거
+    const isJBP = /\[T ONLY_JBP\]/i.test(rawTmpl);
+    const tmpl = rawTmpl
+      .replace(/^\[T ONLY_JBP\]\s*/i, '')
+      .replace(/^\[T ONLY\]\s*/i, '')
+      .replace(/^\[통합[^\]]*\]\s*/,'')
+      .trim()
+      + (isJBP ? ' (JBP)' : '');
+    if(!tmplMap[tmpl]) tmplMap[tmpl] = { tmpl, rawTmpl, spend:0, prevSpend:0, imps:0, prevImps:0, camps:0, kbo:false };
+    tmplMap[tmpl].spend     += r.spend      || 0;
+    tmplMap[tmpl].prevSpend += r.dailyPrev  || 0;
+    tmplMap[tmpl].imps      += r.impressions|| 0;
+    // 전일 노출수: dailyPrev(금액) ÷ CPM × 1000
+    tmplMap[tmpl].prevImps  += r.cpx > 0 ? (r.dailyPrev||0) / r.cpx * 1000 : 0;
+    tmplMap[tmpl].camps     += 1;
+    if(isKBO(r)) tmplMap[tmpl].kbo = true;
+  });
+
+  let items = Object.values(tmplMap);
+  items.sort((a,b) => b[sortBy] - a[sortBy]);
+
+  const totalSpend    = items.reduce((s,i) => s+i.spend,     0);
+  const totalPrevSpend= items.reduce((s,i) => s+i.prevSpend, 0);
+  const totalImps     = items.reduce((s,i) => s+i.imps,      0);
+  const totalPrevImps = items.reduce((s,i) => s+i.prevImps,  0);
+
+  // ── 테이블 ──
+  let html = `<div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border)">
+        <th style="text-align:left;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">상품 템플릿</th>
+        <th style="text-align:center;padding:7px 6px;color:var(--text3);font-weight:600">캠페인</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">누적 집행예산</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">누적 비중</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">누적 노출수</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">노출 비중</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">${prevLabel} 집행예산</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">전일 비중</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">${prevLabel} 노출수</th>
+        <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600;white-space:nowrap">전일 노출 비중</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  items.forEach(item => {
+    const spendPct    = totalSpend     > 0 ? item.spend     / totalSpend     * 100 : 0;
+    const impsPct     = totalImps      > 0 ? item.imps      / totalImps      * 100 : 0;
+    const prevPct     = totalPrevSpend > 0 ? item.prevSpend / totalPrevSpend * 100 : 0;
+    const prevImpsPct = totalPrevImps  > 0 ? item.prevImps  / totalPrevImps  * 100 : 0;
+    const kboBadge    = item.kbo ? `<span style="font-size:9px;background:rgba(255,21,60,0.12);color:var(--red);border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle">KBO</span>` : '';
+
+    html += `
+      <tr style="border-bottom:1px solid var(--border2)">
+        <td style="padding:7px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.rawTmpl}">${item.tmpl}${kboBadge}</td>
+        <td style="padding:7px 6px;text-align:center;color:var(--text3)">${item.camps}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:600">${fW(item.spend)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--blue-text);font-weight:600">${fP(spendPct)}%</td>
+        <td style="padding:7px 10px;text-align:right">${fN(item.imps)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--text3)">${fP(impsPct)}%</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:600;color:var(--blue-text)">${fW(item.prevSpend)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--blue-text)">${fP(prevPct)}%</td>
+        <td style="padding:7px 10px;text-align:right">${fN(Math.round(item.prevImps))}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--text3)">${fP(prevImpsPct)}%</td>
+      </tr>`;
+  });
+
+  // 합계 행
+  html += `
+      <tr style="border-top:2px solid var(--border);background:var(--surface2);font-weight:700">
+        <td style="padding:7px 10px">합계</td>
+        <td style="padding:7px 6px;text-align:center;color:var(--text3)">${rows.length}</td>
+        <td style="padding:7px 10px;text-align:right">${fW(totalSpend)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--blue-text)">100%</td>
+        <td style="padding:7px 10px;text-align:right">${fN(totalImps)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--text3)">100%</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--blue-text)">${fW(totalPrevSpend)}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--blue-text)">100%</td>
+        <td style="padding:7px 10px;text-align:right">${fN(Math.round(totalPrevImps))}</td>
+        <td style="padding:7px 10px;text-align:right;color:var(--text3)">100%</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>`;
+
+  el.innerHTML = html;
+
+  // 차트 표시 (모드에 따라)
+  if(chartWrap) chartWrap.style.display = 'block';
+  _buildTmplDateChart();
+}
+
+// ── 차트 그룹 모드 상태 ──
+let _tmplChartMode = 'tmpl'; // 'tmpl' | 'kw' | 'skip' | 'sec'
+
+function setTmplChartMode(mode) {
+  _tmplChartMode = mode;
+  // 버튼 활성화 스타일
+  ['tmpl','kw','skip','sec'].forEach(m => {
+    const btn = document.getElementById(`tmpl-chart-mode-${m}`);
+    if(!btn) return;
+    if(m === mode) { btn.style.background='#1a1917'; btn.style.color='#fff'; }
+    else           { btn.style.background=''; btn.style.color=''; }
+  });
+  _buildTmplDateChart();
+}
+
+// 그룹 키 함수 반환
+function _getTmplGroupKey(mode) {
+  if(mode === 'kw') {
+    // 키워드 그룹 (실제 템플릿명 패턴 기반)
+    return tmpl => {
+      const t = tmpl.toLowerCase();
+      if(t.includes('top20')) return 'TOP20';
+      if(t.includes('prime time') || t.includes('primetime')) return 'Prime Time';
+      if(t.includes('시청데모')) return '시청데모';
+      if(t.includes('관심사') || t.includes('세그먼트')) return '관심사 세그먼트';
+      if(t.includes('뉴스채널')) return '뉴스채널';
+      if(t.includes('ctv') || t.includes('premier')) return 'CTV Premier';
+      if(t.includes('kbo') || t.includes('ob맥주')) return 'KBO/스포츠';
+      if(t.includes('베이직인스트림') || t.includes('베이직 인스트림')) return '베이직인스트림';
+      if(t.includes('이미지배너') || t.includes('이미지 배너')) return '이미지배너';
+      if(t.includes('golf') || t.includes('klpga') || t.includes('kpga')) return '골프';
+      if(t.includes('퍼스트뷰') || t.includes('firstview')) return '퍼스트뷰';
+      if(t.includes('하우스')) return '하우스';
+      return '기타';
+    };
+  }
+  if(mode === 'skip') {
+    return tmpl => {
+      const t = tmpl.toLowerCase();
+      if(t.includes('논스킵')) return '논스킵';
+      if(t.includes('스킵') && !t.includes('논스킵')) return '스킵';
+      if(t.includes('kbo') || t.includes('ob맥주') || t.includes('퍼스트뷰')) return 'KBO/기타';
+      return '기타';
+    };
+  }
+  if(mode === 'sec') {
+    return tmpl => {
+      const t = tmpl;
+      if(t.includes('15초')) return '15초';
+      if(t.includes('30초')) return '30초';
+      if(t.includes('스킵') && !t.includes('논스킵')) return '스킵(초수무관)';
+      return '기타';
+    };
+  }
+  // 기본: 템플릿별 (JBP 별도 표시)
+  return rawTmpl => {
+    const isJBP = /\[T ONLY_JBP\]/i.test(rawTmpl);
+    return rawTmpl
+      .replace(/^\[T ONLY_JBP\]\s*/i,'').replace(/^\[T ONLY\]\s*/i,'')
+      .replace(/^\[통합[^\]]*\]\s*/,'').trim()
+      + (isJBP ? ' (JBP)' : '');
+  };
+}
+
+let _tmplChartCumul = 0; // 0=하루치, 1=누적
+let _tmplChartMetric = 'spend'; // 'spend' | 'imps'
+
+function setTmplChartCumul(val) {
+  _tmplChartCumul = val;
+  ['0','1'].forEach(v => {
+    const btn = document.getElementById(`tmpl-chart-cumul-${v}`);
+    if(!btn) return;
+    btn.style.background = v == val ? '#1a1917' : '';
+    btn.style.color      = v == val ? '#fff'    : '';
+  });
+  _buildTmplDateChart();
+}
+
+function setTmplChartMetric(metric) {
+  _tmplChartMetric = metric;
+  ['spend','imps'].forEach(m => {
+    const btn = document.getElementById(`tmpl-chart-metric-${m}`);
+    if(!btn) return;
+    btn.style.background = m === metric ? '#1a1917' : '';
+    btn.style.color      = m === metric ? '#fff'    : '';
+  });
+  _buildTmplDateChart();
+}
+
+function _drawTmplChart() {
+  _buildTmplDateChart();
+}
+
+function _buildTmplDateChart() {
+  const ctxEl = document.getElementById('ch-tmpl');
+  if(!ctxEl) return;
+  if(CH['tmpl']) CH['tmpl'].destroy();
+
+  // 기존 테이블 필터와 동일하게 사용 (KBO만/예약형만/전체)
+  const filterVal = document.getElementById('tmpl-filter')?.value || 'all';
+  let rows = (ST.rows||[]).filter(r => r.status === 'ACTIVE');
+  if(filterVal === 'kbo') rows = rows.filter(r => isKBO(r));
+  else if(filterVal === 'gen') rows = rows.filter(r => !isKBO(r));
+  if(!rows.length || !ST.dateCols.length) return;
+
+  // 그룹 키 함수
+  const groupKeyFn = _getTmplGroupKey(_tmplChartMode);
+
+  // 날짜 컬럼 (소진 있는 날만)
+  const validCols = ST.dateCols.filter(k => {
+    const nk = normDateKey(k);
+    return rows.some(r => r.dailyByDate?.[nk] > 0);
+  });
+  if(!validCols.length) return;
+
+  const dateLabels = validCols.map(k => fmtDateShort(normDateKey(k)));
+
+  // 그룹별 날짜별 집계 (집행금액 또는 노출수)
+  const groupMap = {};
+  const groupMembers = {}; // 각 그룹에 속한 원본 템플릿명 추적
+  rows.forEach(r => {
+    const gKey = groupKeyFn(r.tmpl || '미분류');
+    const cpm  = r.cpx || 0;
+    if(!groupMap[gKey]) { groupMap[gKey] = {}; groupMembers[gKey] = new Set(); }
+    // 기타 그룹이거나 템플릿별 모드가 아닐 때 — 원본 이름 기록
+    if(gKey === '기타' || _tmplChartMode !== 'tmpl') {
+      const cleanTmpl = (r.tmpl||'미분류')
+        .replace(/^\[T ONLY_JBP\]\s*/i,'').replace(/^\[T ONLY\]\s*/i,'')
+        .replace(/^\[통합[^\]]*\]\s*/,'').trim();
+      groupMembers[gKey].add(cleanTmpl);
+    }
+    validCols.forEach(k => {
+      const nk    = normDateKey(k);
+      const spend = r.dailyByDate?.[nk] || 0;
+      const val = _tmplChartMetric === 'imps'
+        ? (cpm > 0 ? spend / cpm * 1000 : 0)
+        : spend;
+      groupMap[gKey][nk] = (groupMap[gKey][nk] || 0) + val;
+    });
+  });
+
+  // 그룹 총합 기준 정렬 (많은 것 먼저)
+  const groups = Object.entries(groupMap)
+    .map(([gKey, byDate]) => ({
+      gKey,
+      total: Object.values(byDate).reduce((s,v)=>s+v, 0),
+      byDate,
+      members: groupMembers[gKey] ? [...groupMembers[gKey]].sort() : []
+    }))
+    .sort((a,b) => b.total - a.total);
+
+  // 컬러 팔레트 — KBO면 파란 계열, 예약형이면 빨간 계열, 전체면 혼합
+  const KBO_COLORS = [
+    'rgba(37,99,235,0.80)','rgba(14,165,233,0.75)','rgba(6,182,212,0.70)',
+    'rgba(99,102,241,0.75)','rgba(56,189,248,0.70)','rgba(124,58,237,0.70)',
+    'rgba(167,139,250,0.70)','rgba(59,130,246,0.65)',
+  ];
+  const GEN_COLORS = [
+    'rgba(220,38,38,0.75)','rgba(245,158,11,0.75)','rgba(5,150,105,0.70)',
+    'rgba(236,72,153,0.70)','rgba(251,146,60,0.70)','rgba(16,185,129,0.65)',
+    'rgba(234,179,8,0.70)','rgba(239,68,68,0.65)',
+  ];
+  const ALL_COLORS = [
+    'rgba(37,99,235,0.75)','rgba(220,38,38,0.70)','rgba(5,150,105,0.70)',
+    'rgba(217,119,6,0.70)','rgba(124,58,237,0.70)','rgba(236,72,153,0.70)',
+    'rgba(14,165,233,0.70)','rgba(245,158,11,0.70)','rgba(6,182,212,0.70)',
+    'rgba(168,85,247,0.70)','rgba(239,68,68,0.65)','rgba(16,185,129,0.65)',
+  ];
+  const palette = filterVal === 'kbo' ? KBO_COLORS : filterVal === 'gen' ? GEN_COLORS : ALL_COLORS;
+
+  const datasets = groups.map((g, i) => {
+    let data;
+    if(_tmplChartCumul === 1) {
+      let cum = 0;
+      data = validCols.map(k => { cum += g.byDate[normDateKey(k)] || 0; return cum; });
+    } else {
+      data = validCols.map(k => g.byDate[normDateKey(k)] || 0);
+    }
+    return {
+      label: g.gKey.length > 25 ? g.gKey.slice(0,25)+'…' : g.gKey,
+      data,
+      backgroundColor: palette[i % palette.length],
+      borderRadius: 2,
+      stack: 'spend',
+      members: g.members   // 기타 구성 목록 저장
+    };
+  });
+
+  const height = Math.max(220, Math.min(420, 160 + validCols.length * 18));
+  ctxEl.parentElement.style.height = height + 'px';
+
+  const isImps = _tmplChartMetric === 'imps';
+  const fV = n => isImps
+    ? Math.round(n).toLocaleString('ko-KR') + ' imps'
+    : '₩' + Math.round(n).toLocaleString('ko-KR');
+  const yCallback = v => isImps
+    ? (v >= 1e8 ? (v/1e8).toFixed(1)+'억' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v)
+    : (v >= 1e8 ? '₩'+(v/1e8).toFixed(1)+'억' : v >= 1e6 ? '₩'+(v/1e6).toFixed(0)+'M' : '₩'+v);
+
+  CH['tmpl'] = new Chart(ctxEl, {
+    type: 'bar',
+    data: { labels: dateLabels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend:{ position:'top', labels:{ color:'#8f8fa0', font:{ size:10 }, boxWidth:10, padding:8 } },
+        tooltip:{
+          mode:'index', intersect:false,
+          callbacks:{
+            label: ctx => {
+              if(ctx.raw <= 0) return null;
+              const base = `${ctx.dataset.label}: ${fV(ctx.raw)}`;
+              const members = ctx.dataset.members;
+              // 템플릿별 모드가 아닐 때 또는 기타 그룹일 때 구성 목록 표시
+              if(members && members.length > 0 && (_tmplChartMode !== 'tmpl' || ctx.dataset.label.includes('기타'))) {
+                const shown = members.slice(0, 5).join(', ');
+                const more  = members.length > 5 ? ` 외 ${members.length-5}개` : '';
+                return [base, `  ↳ ${shown}${more}`];
+              }
+              return base;
+            },
+            footer: items => `합계: ${fV(items.reduce((s,i)=>s+(i.raw||0),0))}`
+          }
+        }
+      },
+      scales:{
+        x:{ stacked:true, ticks:{ color:'#5e5e6e', font:{ size:10 }, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        y:{ stacked:true, ticks:{ color:'#5e5e6e', font:{ size:10 }, callback: yCallback }, grid:{ color:'rgba(255,255,255,0.06)' } }
+      }
+    }
+  });
+}
+
+function downloadTemplateCSV() {
+  const filterVal = document.getElementById('tmpl-filter')?.value || 'all';
+  let rows = (ST.rows||[]).filter(r => r.status === 'ACTIVE');
+  if(filterVal === 'kbo') rows = rows.filter(r => isKBO(r));
+  else if(filterVal === 'gen') rows = rows.filter(r => !isKBO(r));
+  if(!rows.length) { alert('데이터가 없어요.'); return; }
+
+  const prevLabel = rows.find(r => r.dailyPrevLabel)?.dailyPrevLabel || '전일';
+
+  const tmplMap = {};
+  rows.forEach(r => {
+    const rawTmpl = r.tmpl || '미분류';
+    const isJBP = /\[T ONLY_JBP\]/i.test(rawTmpl);
+    const tmpl = rawTmpl
+      .replace(/^\[T ONLY_JBP\]\s*/i,'').replace(/^\[T ONLY\]\s*/i,'')
+      .replace(/^\[통합[^\]]*\]\s*/,'').trim()
+      + (isJBP ? ' (JBP)' : '');
+    if(!tmplMap[tmpl]) tmplMap[tmpl] = { tmpl, rawTmpl, spend:0, prevSpend:0, imps:0, prevImps:0, camps:0 };
+    tmplMap[tmpl].spend     += r.spend      || 0;
+    tmplMap[tmpl].prevSpend += r.dailyPrev  || 0;
+    tmplMap[tmpl].imps      += r.impressions|| 0;
+    tmplMap[tmpl].prevImps  += r.cpx > 0 ? (r.dailyPrev||0) / r.cpx * 1000 : 0;
+    tmplMap[tmpl].camps     += 1;
+  });
+
+  const items = Object.values(tmplMap).sort((a,b) => b.spend - a.spend);
+  const totalSpend    = items.reduce((s,i) => s+i.spend,     0);
+  const totalPrevSpend= items.reduce((s,i) => s+i.prevSpend, 0);
+  const totalImps     = items.reduce((s,i) => s+i.imps,      0);
+  const totalPrevImps = items.reduce((s,i) => s+i.prevImps,  0);
+  const fP = (n,d=1) => Number(n).toFixed(d);
+
+  const headers = ['상품 템플릿 (원본)', '상품 템플릿', '캠페인 수',
+    '누적 집행예산(원)', '누적 비중(%)',
+    '누적 노출수', '노출 비중(%)',
+    `${prevLabel} 집행예산(원)`, '전일 비중(%)',
+    `${prevLabel} 노출수`, '전일 노출 비중(%)'];
+
+  const csvRows = [headers.join(',')];
+  items.forEach(i => {
+    const spendPct = totalSpend > 0 ? fP(i.spend/totalSpend*100) : '0.0';
+    const impsPct  = totalImps  > 0 ? fP(i.imps/totalImps*100)   : '0.0';
+    const prevPct  = totalPrevSpend > 0 ? fP(i.prevSpend/totalPrevSpend*100) : '0.0';
+    const prevIPct = totalPrevImps  > 0 ? fP(i.prevImps/totalPrevImps*100)   : '0.0';
+    csvRows.push([
+      `"${i.rawTmpl}"`, `"${i.tmpl}"`, i.camps,
+      i.spend, spendPct,
+      Math.round(i.imps), impsPct,
+      i.prevSpend, prevPct,
+      Math.round(i.prevImps), prevIPct
+    ].join(','));
+  });
+  // 합계
+  csvRows.push(['합계','합계', rows.length,
+    totalSpend, '100.0', Math.round(totalImps), '100.0',
+    totalPrevSpend, '100.0', Math.round(totalPrevImps), '100.0'
+  ].join(','));
+
+  const bom = '\uFEFF';
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const blob = new Blob([bom + csvRows.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`템플릿별_소진현황_${ts}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderTrendChart(){
   const el=document.getElementById('ch-trend');
   if(!el||!ST.dateCols.length||!ST.rows.length) return;
 
-  // 날짜별 전체 일예산 합계 계산
+  // ACTIVE 캠페인만
+  const kboActive = ST.rows.filter(r=>isKBO(r)&&r.status==='ACTIVE');
+  const genActive = ST.rows.filter(r=>!isKBO(r)&&r.status==='ACTIVE');
+
+  // 날짜별 소진 합산 (KBO / 예약형 분리)
   const validCols=ST.dateCols.filter(k=>{
     const nk=normDateKey(k);
     const total=ST.rows.reduce((a,r)=>a+(r.dailyByDate&&r.dailyByDate[nk]||0),0);
@@ -3914,14 +4682,15 @@ function renderTrendChart(){
   if(!validCols.length) return;
 
   const labels=validCols.map(k=>fmtDateShort(normDateKey(k)));
-  const spendData=validCols.map(k=>{
-    const nk=normDateKey(k);
-    return ST.rows.reduce((a,r)=>a+(r.dailyByDate&&r.dailyByDate[nk]||0),0);
-  });
 
-  // 목표 일예산 (일예산 기준 평균 — 각 캠페인의 dailyBudget 합계)
-  const targetTotal=ST.rows.reduce((a,r)=>a+(r.dailyBudget||0),0);
-  const targetData=validCols.map(()=>targetTotal);
+  const kboData=validCols.map(k=>{
+    const nk=normDateKey(k);
+    return kboActive.reduce((a,r)=>a+(r.dailyByDate&&r.dailyByDate[nk]||0),0);
+  });
+  const genData=validCols.map(k=>{
+    const nk=normDateKey(k);
+    return genActive.reduce((a,r)=>a+(r.dailyByDate&&r.dailyByDate[nk]||0),0);
+  });
 
   if(CH['trend'])CH['trend'].destroy();
   CH['trend']=new Chart(el,{
@@ -3930,22 +4699,22 @@ function renderTrendChart(){
       labels,
       datasets:[
         {
-          label:'실제 일 소진',
-          data:spendData,
-          backgroundColor:spendData.map(v=>v<targetTotal*0.9?'rgba(255,21,60,0.7)':v>targetTotal*1.1?'rgba(245,158,11,0.7)':'rgba(255,21,60,0.45)'),
-          borderRadius:3,
-          order:2
+          label:'KBO',
+          data:kboData,
+          backgroundColor:'rgba(37,99,235,0.7)',
+          borderColor:'rgba(37,99,235,0.9)',
+          borderWidth:0,
+          borderRadius:2,
+          stack:'spend'
         },
         {
-          label:'목표 일예산',
-          data:targetData,
-          type:'line',
-          borderColor:'rgba(255,255,255,0.25)',
-          borderDash:[5,3],
-          borderWidth:1.5,
-          pointRadius:0,
-          fill:false,
-          order:1
+          label:'예약형',
+          data:genData,
+          backgroundColor:'rgba(255,21,60,0.6)',
+          borderColor:'rgba(255,21,60,0.8)',
+          borderWidth:0,
+          borderRadius:2,
+          stack:'spend'
         }
       ]
     },
@@ -3959,19 +4728,28 @@ function renderTrendChart(){
           labels:{color:'#8f8fa0',font:{size:11},boxWidth:12,padding:16}
         },
         tooltip:{
+          mode:'index',
+          intersect:false,
           callbacks:{
-            label:ctx=>{
-              if(ctx.dataset.label==='목표 일예산') return `목표: ${fmtW(ctx.raw)}`;
-              const diff=ctx.raw-targetTotal;
-              const sign=diff>=0?'▲':'▼';
-              return [`실제: ${fmtW(ctx.raw)}`,`${sign} ${fmtW(Math.abs(diff))} ${diff>=0?'초과':'미달'}`];
+            label:ctx=>`${ctx.dataset.label}: ${fmtW(ctx.raw)}`,
+            footer:items=>{
+              const total=items.reduce((a,i)=>a+i.raw,0);
+              return `합계: ${fmtW(total)}`;
             }
           }
         }
       },
       scales:{
-        x:{ticks:{color:'#5e5e6e',font:{size:10},maxRotation:45},grid:{color:'rgba(255,255,255,0.04)'}},
-        y:{ticks:{color:'#5e5e6e',font:{size:10},callback:v=>v>=1e8?'₩'+(v/1e8).toFixed(1)+'억':v>=1e6?'₩'+(v/1e6).toFixed(0)+'M':v>=1e3?'₩'+(v/1e3).toFixed(0)+'K':'₩'+v},grid:{color:'rgba(255,255,255,0.06)'}}
+        x:{
+          stacked:true,
+          ticks:{color:'#5e5e6e',font:{size:10},maxRotation:45},
+          grid:{color:'rgba(255,255,255,0.04)'}
+        },
+        y:{
+          stacked:true,
+          ticks:{color:'#5e5e6e',font:{size:10},callback:v=>v>=1e8?'₩'+(v/1e8).toFixed(1)+'억':v>=1e6?'₩'+(v/1e6).toFixed(0)+'M':v>=1e3?'₩'+(v/1e3).toFixed(0)+'K':'₩'+v},
+          grid:{color:'rgba(255,255,255,0.06)'}
+        }
       }
     }
   });
@@ -4035,14 +4813,16 @@ function renderAlertTypeSummary(){
   const el=document.getElementById('alert-type-summary');
   if(!el) return;
   const categories=[
-    {type:'status',    label:'상태 오류',     icon:'🔴', sev:'er'},
-    {type:'budget100', label:'예산 조기소진', icon:'🔴', sev:'er'},
-    {type:'lastday_imp',  label:'D-1 노출미달', icon:'🔴', sev:'er'},
-    {type:'lastday_total',label:'D-1 총노출미달',icon:'🔴', sev:'er'},
-    {type:'daily',     label:'일예산 이상',   icon:'🔴', sev:'er'},
-    {type:'over',      label:'과소진',        icon:'🟡', sev:'wn'},
-    {type:'overrate',  label:'초과달성율 양수', icon:'🔴', sev:'er'},
-    {type:'exp',       label:'종료 임박',     icon:'🟡', sev:'wn'},
+    {type:'status',      label:'상태 오류',        icon:'🔴', sev:'er'},
+    {type:'primetime_early', label:'Prime Time 조기소진', icon:'🔴', sev:'er'},
+    {type:'overrate',    label:'초과달성율 양수',  icon:'🔴', sev:'er'},
+    {type:'exp',         label:'종료 임박',        icon:'🔴', sev:'er'},
+    {type:'budget100',   label:'예산 조기소진',    icon:'🔴', sev:'er'},
+    {type:'lastday_imp', label:'D-1 노출미달',     icon:'🔴', sev:'er'},
+    {type:'lastday_total',label:'D-1 총노출미달',  icon:'🔴', sev:'er'},
+    {type:'under',       label:'미소진',           icon:'🔴', sev:'er'},
+    {type:'over',        label:'과소진',           icon:'🟡', sev:'wn'},
+    {type:'daily',       label:'일예산 이상',      icon:'🟡', sev:'wn'},
   ];
   const grouped={};
   ST.alerts.forEach(a=>{if(!grouped[a.type])grouped[a.type]=[];grouped[a.type].push(a);});
@@ -4276,6 +5056,48 @@ function isAmtBased(r, quota) {
   return isAmt;
 }
 
+
+// ── 배분 계산기 입력값 유지 ──
+let _AL_CACHE = null;
+function _alSave() {
+  const s = {
+    total:   document.getElementById('al-total')?.value,
+    housePct:document.getElementById('al-house-pct')?.value,
+    houseImpsVal: document.getElementById('al-house-imps-val')?.value,
+    houseMode: _alMode.house,
+    slatePct:document.getElementById('al-slate-pct')?.value,
+    slateImpsVal: document.getElementById('al-slate-imps-val')?.value,
+    slateMode: _alMode.slate,
+    use7i:   document.getElementById('al-7i-on')?.checked,
+    imps7i:  document.getElementById('al-7i-imps')?.value,
+    useFv:   document.getElementById('al-fv-on')?.checked,
+    fv15:    document.getElementById('al-fv15-imps')?.value,
+    fv30:    document.getElementById('al-fv30-imps')?.value,
+    days:    document.getElementById('al-days')?.value,
+  };
+  _AL_CACHE = s;
+  try { localStorage.setItem('al_calc_state', JSON.stringify(s)); } catch(e) {}
+}
+function _alLoad() {
+  let s = _AL_CACHE;
+  if(!s) { try { const r=localStorage.getItem('al_calc_state'); if(r) s=JSON.parse(r); } catch(e){} }
+  if(!s) return;
+  const set = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
+  set('al-total', s.total);
+  set('al-house-pct', s.housePct);
+  set('al-house-imps-val', s.houseImpsVal);
+  set('al-slate-pct', s.slatePct);
+  set('al-slate-imps-val', s.slateImpsVal);
+  set('al-7i-imps', s.imps7i);
+  set('al-fv15-imps', s.fv15);
+  set('al-fv30-imps', s.fv30);
+  set('al-days', s.days);
+  if(s.use7i != null) document.getElementById('al-7i-on').checked = s.use7i;
+  if(s.useFv != null) document.getElementById('al-fv-on').checked = s.useFv;
+  if(s.houseMode) alSetMode('house', s.houseMode);
+  if(s.slateMode) alSetMode('slate', s.slateMode);
+}
+
 function alCalc() {
   const fN = n => Math.round(n).toLocaleString('ko-KR');
   const fP = (n,d=1) => Number(n).toFixed(d);
@@ -4458,6 +5280,7 @@ function alCalc() {
     ? 'var(--green-bg)' : 'var(--amber-bg)';
   diffBadge.style.color = Math.abs(diffImps) < 1000
     ? 'var(--green-text)' : 'var(--amber-text)';
+  _alSave();
 }
 
 // alCalc 초기 실행은 탭 클릭 시에만 (데이터 로드 이후)
@@ -4519,6 +5342,424 @@ function alDownloadCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ════════════════════════════════════════════════════════
+// ② 캠페인별 일별 소진 히트맵
+// ════════════════════════════════════════════════════════
+function renderHeatmap() {
+  const container = document.getElementById('hm-container');
+  if(!container) return;
+  const rows = ST.rows || [];
+  const filterVal = document.getElementById('hm-filter')?.value || 'all';
+  const metric = document.getElementById('hm-metric')?.value || 'spend';
+  if(!rows.length || !ST.dateCols.length) { container.innerHTML='<div class="empty" style="padding:1.5rem;font-size:12px">데이터를 업로드하면 히트맵이 표시됩니다</div>'; return; }
+
+  // 날짜 컬럼 (소진 있는 날만)
+  const validCols = ST.dateCols.filter(k => {
+    const nk = normDateKey(k);
+    return rows.some(r => r.dailyByDate && (r.dailyByDate[nk]||0) > 0);
+  });
+  if(!validCols.length) return;
+
+  // 필터
+  let filtered = rows.filter(r => r.status === 'ACTIVE');
+  if(filterVal === 'kbo') filtered = filtered.filter(r => isKBO(r));
+  else if(filterVal === 'gen') filtered = filtered.filter(r => !isKBO(r));
+  if(!filtered.length) { container.innerHTML='<div class="empty" style="padding:1rem;font-size:12px">해당하는 캠페인이 없어요</div>'; return; }
+
+  // 날짜별 최대값 계산 (색상 스케일용)
+  const colMax = {};
+  validCols.forEach(k => {
+    const nk = normDateKey(k);
+    colMax[nk] = Math.max(...filtered.map(r => r.dailyByDate?.[nk]||0), 1);
+  });
+
+  const cellW = Math.max(28, Math.min(44, Math.floor(700 / validCols.length)));
+  const dateLabels = validCols.map(k => fmtDateShort(normDateKey(k)));
+
+  let t = `<table style="border-collapse:collapse;font-size:10px;min-width:100%">`;
+  // 헤더
+  t += `<thead><tr><th style="text-align:left;padding:3px 8px;color:var(--text3);min-width:120px;max-width:160px;font-weight:500">캠페인</th>`;
+  dateLabels.forEach(d => { t += `<th style="text-align:center;padding:3px 2px;color:var(--text3);width:${cellW}px;font-weight:500">${d}</th>`; });
+  t += `</tr></thead><tbody>`;
+
+  filtered.forEach(r => {
+    const name = (r.sub || r.camp || '').slice(0, 20);
+    const kboMark = isKBO(r) ? '⚾ ' : '';
+    t += `<tr><td style="padding:3px 8px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="${r.sub||r.camp}">${kboMark}${name}</td>`;
+    validCols.forEach(k => {
+      const nk = normDateKey(k);
+      const val = r.dailyByDate?.[nk] || 0;
+      let bg, title;
+      if(val === 0) {
+        bg = 'background:rgba(255,50,50,0.15)'; title = '0원';
+      } else if(metric === 'rate') {
+        const ref = r.dailyBudget || 1;
+        const pct = Math.min(val / ref, 2);
+        const alpha = Math.min(0.9, 0.15 + pct * 0.6);
+        bg = `background:rgba(37,99,235,${alpha.toFixed(2)})`;
+        title = `${(pct*100).toFixed(0)}%`;
+      } else {
+        const alpha = Math.min(0.9, 0.15 + (val / colMax[nk]) * 0.75);
+        bg = `background:rgba(37,99,235,${alpha.toFixed(2)})`;
+        title = '₩' + Math.round(val).toLocaleString('ko-KR');
+      }
+      t += `<td style="padding:2px;text-align:center" title="${title}"><div style="${bg};border-radius:3px;height:18px;width:${cellW-4}px"></div></td>`;
+    });
+    t += `</tr>`;
+  });
+  t += `</tbody></table>`;
+  container.innerHTML = t;
+}
+
+// ════════════════════════════════════════════════════════
+// ③ 집행 속도 예측 (경기일 기반 · 경기 없는 날 잔여일 분배)
+// ════════════════════════════════════════════════════════
+function renderSpeedForecast() {
+  const el = document.getElementById('speed-forecast-list');
+  if(!el) return;
+  const s = loadKBOSettings();
+  const products = s.products || [];
+  const excluded = s.excluded || {};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const kboRows = (ST.rows||[]).filter(r => isKBO(r) && r.status==='ACTIVE');
+  if(!kboRows.length) { el.innerHTML='<div class="empty" style="padding:1rem;font-size:12px">KBO ACTIVE 캠페인 데이터가 없어요</div>'; return; }
+
+  const norm = s => (s||'').replace(/\s+/g,' ').trim().toLowerCase();
+  const matchProd = tmpl => products.find(p => p.tmpl && (norm(p.tmpl) === norm(tmpl) || norm(tmpl).includes(norm(p.tmpl)))) || null;
+
+  const items = kboRows.map(r => {
+    const prod = matchProd(r.tmpl);
+    const cost = prod?.cost || 0;
+    const cpm  = prod?.cpm || r.cpx || 14000;
+    if(!cost || !r.endDate) return null;
+
+    const endMo = r.endDate.getMonth();
+    const endYr = r.endDate.getFullYear();
+    const monthStart = new Date(endYr, endMo, 1);
+    const exDays = getExDays(excluded, endYr, endMo);
+    const daysInMo = new Date(endYr, endMo+1, 0).getDate();
+
+    // 총 경기일
+    let totalGameDays = 0;
+    for(let d=1; d<=daysInMo; d++) if(!exDays.includes(d)) totalGameDays++;
+
+    // 오늘까지 경과 경기일
+    let passedGameDays = 0;
+    for(let ms=monthStart.getTime(); ms<=today.getTime(); ms+=86400000) {
+      const dt = new Date(ms);
+      if(dt.getMonth()===endMo && !exDays.includes(dt.getDate())) passedGameDays++;
+    }
+
+    // 잔여 경기일
+    const remGameDays = totalGameDays - passedGameDays;
+
+    // 현재 집행속도 (경기일 기준 일 소진 평균)
+    const spend = r.spend || 0;
+    const dailySpendPerGame = passedGameDays > 0 ? spend / passedGameDays : 0;
+
+    // 예측: 잔여 경기일 × 현재 일 소진 + 현재 집행 = 예상 최종 집행
+    // 경기 없는 날 예산은 다음 경기일에 분배 (시스템 로직 반영)
+    // → 일예산은 잔여예산 / 잔여일(경기일+비경기일) 이지만
+    //   실제 소진은 경기일에만 발생하므로 경기일 기준으로 예측
+    const projectedTotal = spend + dailySpendPerGame * remGameDays;
+    const projectedRate = cost > 0 ? projectedTotal / cost * 100 : 0;
+
+    // 남은 경기일 동안 목표 달성을 위한 필요 일 소진
+    const remaining = Math.max(0, cost - spend);
+    const neededPerGame = remGameDays > 0 ? remaining / remGameDays : 0;
+    const speedRatio = neededPerGame > 0 ? dailySpendPerGame / neededPerGame * 100 : 0;
+
+    return { r, cost, spend, projectedRate, projectedTotal, remGameDays, passedGameDays, totalGameDays, dailySpendPerGame, neededPerGame, speedRatio, remaining };
+  }).filter(Boolean);
+
+  if(!items.length) { el.innerHTML='<div class="empty" style="padding:1rem;font-size:12px">매칭된 KBO 캠페인이 없어요 — 상품 설정을 확인해주세요</div>'; return; }
+
+  // 예측 달성율 기준 정렬 (낮은 것 먼저)
+  items.sort((a,b) => a.projectedRate - b.projectedRate);
+
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+  const fP = (n,d=1) => Number(n).toFixed(d);
+
+  let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+  <thead><tr style="border-bottom:1px solid var(--border)">
+    <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:600">캠페인</th>
+    <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600">현재 집행</th>
+    <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600">경기일 기준<br>일 평균 소진</th>
+    <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600">필요 일 소진<br>(잔여 ${0}경기일)</th>
+    <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600">속도 비율</th>
+    <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600">예상 최종 달성율</th>
+  </tr></thead><tbody>`;
+
+  items.forEach(({r, cost, spend, projectedRate, dailySpendPerGame, neededPerGame, speedRatio, remGameDays, passedGameDays, totalGameDays}) => {
+    const name = r.sub || r.camp || '';
+    const rateColor = projectedRate >= 95 ? 'var(--green)' : projectedRate >= 80 ? 'var(--amber)' : 'var(--red)';
+    const speedColor = speedRatio >= 90 ? 'var(--green)' : speedRatio >= 70 ? 'var(--amber)' : 'var(--red)';
+    const projSign = projectedRate >= 100 ? '▲' : '▼';
+    html += `<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:6px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${name}">${name.slice(0,25)}</td>
+      <td style="padding:6px 8px;text-align:right">₩${fN(spend)}<br><span style="color:var(--text3);font-size:10px">${fP(spend/cost*100)}% / ₩${fN(cost)}</span></td>
+      <td style="padding:6px 8px;text-align:right">₩${fN(dailySpendPerGame)}<br><span style="color:var(--text3);font-size:10px">${passedGameDays}경기일 기준</span></td>
+      <td style="padding:6px 8px;text-align:right">₩${fN(neededPerGame)}<br><span style="color:var(--text3);font-size:10px">잔여 ${remGameDays}경기일</span></td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700;color:${speedColor}">${fP(speedRatio)}%</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700;color:${rateColor}">${projSign} ${fP(projectedRate)}%</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>
+  <div style="margin-top:8px;font-size:10px;color:var(--text3)">
+    ※ 속도 비율: 현재 일 평균 소진 ÷ 필요 일 소진 × 100. 100% 미만이면 현재 속도로는 구좌단가를 소진하지 못해요.<br>
+    ※ 경기 없는 날 예산은 잔여 경기일에 자동 분배되는 시스템 로직을 반영했어요.
+  </div>`;
+  el.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+// ④ 주간 리포트 생성
+// ════════════════════════════════════════════════════════
+function generateWeeklyReport() {
+  const week = document.getElementById('wr-week')?.value || '';
+  const author = document.getElementById('wr-author')?.value || '';
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+
+  const fW = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+  const fP = (n,d=1) => Number(n).toFixed(d) + '%';
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+
+  const kboRows = (ST.rows||[]).filter(r => isKBO(r) && r.status==='ACTIVE');
+  const genRows = (ST.rows||[]).filter(r => !isKBO(r) && r.status==='ACTIVE');
+  const allActive = (ST.rows||[]).filter(r => r.status==='ACTIVE');
+
+  const kboSpend = kboRows.reduce((a,r)=>a+(r.spend||0),0);
+  const kboBudget = kboRows.reduce((a,r)=>a+(r.totalBudget||0),0);
+  const genSpend = genRows.reduce((a,r)=>a+(r.spend||0),0);
+  const genBudget = genRows.reduce((a,r)=>a+(r.totalBudget||0),0);
+  const totalSpend = allActive.reduce((a,r)=>a+(r.spend||0),0);
+  const totalBudget = allActive.reduce((a,r)=>a+(r.totalBudget||0),0);
+
+  // 알럿 현황
+  const erAlerts = ST.alerts.filter(a=>a.sev==='er');
+  const wnAlerts = ST.alerts.filter(a=>a.sev==='wn');
+  const statusAlerts = ST.alerts.filter(a=>a.type==='status');
+  const expAlerts = ST.alerts.filter(a=>a.type==='exp');
+
+  // KBO 달성율 분포
+  const s = loadKBOSettings();
+  const products = s.products || [];
+
+  let lines = [];
+  lines.push(`📊 *KBO 캠페인 주간 운영 리포트*`);
+  lines.push(`${week ? `📅 ${week}` : ''} ${author ? `✍️ ${author}` : ''} | 기준: ${dateStr}`);
+  lines.push('');
+  lines.push('─────────────────────────────');
+  lines.push('*📦 집행 현황 요약*');
+  lines.push(`• 전체 집행: ${fW(totalSpend)} / ${fW(totalBudget)} (${fP(totalBudget>0?totalSpend/totalBudget*100:0)})`);
+  lines.push(`• KBO: ${fW(kboSpend)} / ${fW(kboBudget)} (${fP(kboBudget>0?kboSpend/kboBudget*100:0)}) — ${kboRows.length}개 캠페인`);
+  lines.push(`• 예약형: ${fW(genSpend)} / ${fW(genBudget)} (${fP(genBudget>0?genSpend/genBudget*100:0)}) — ${genRows.length}개 캠페인`);
+  lines.push('');
+  lines.push('─────────────────────────────');
+  lines.push('*🚨 이상 감지 현황*');
+  lines.push(`• 오류: ${erAlerts.length}건 | 주의: ${wnAlerts.length}건`);
+  if(statusAlerts.length) lines.push(`• 상태 오류: ${statusAlerts.map(a=>a.camp.slice(0,20)).join(', ')}`);
+  if(expAlerts.length) lines.push(`• 종료 임박: ${expAlerts.map(a=>`${a.camp.slice(0,15)}(${a.msg.match(/D-\d+/)?.[0]||''})`).join(', ')}`);
+  lines.push('');
+
+  // KBO 달성율 상세 (낮은 것 먼저)
+  const norm = str => (str||'').replace(/\s+/g,' ').trim().toLowerCase();
+  const kboDetails = kboRows.map(r => {
+    const prod = products.find(p => p.tmpl && (norm(p.tmpl)===norm(r.tmpl)||norm(r.tmpl).includes(norm(p.tmpl))));
+    return { name: r.sub||r.camp, budgetRate: r.budgetRate||0, periodRate: r.periodRate||0, remaining: r.remaining||0 };
+  }).sort((a,b) => a.budgetRate - b.budgetRate);
+
+  lines.push('─────────────────────────────');
+  lines.push('*⚾ KBO 캠페인 달성율 (낮은 순)*');
+  kboDetails.slice(0,10).forEach(d => {
+    const gap = d.budgetRate - d.periodRate;
+    const gapStr = gap >= 0 ? `+${gap.toFixed(1)}%p` : `${gap.toFixed(1)}%p`;
+    lines.push(`• ${d.name.slice(0,22)}: 예산 ${fP(d.budgetRate)} vs 기간 ${fP(d.periodRate)} (${gapStr})`);
+  });
+  if(kboDetails.length > 10) lines.push(`  … 외 ${kboDetails.length-10}개`);
+  lines.push('');
+  lines.push('─────────────────────────────');
+  lines.push('*📝 특이사항 및 조치 계획*');
+  lines.push('(직접 입력)');
+  lines.push('');
+  lines.push(`_자동생성 by TAS 모니터링 대시보드 ${dateStr}_`);
+
+  const text = lines.join('\n');
+  document.getElementById('wr-output').textContent = text;
+}
+
+function copyWeeklyReport() {
+  const text = document.getElementById('wr-output')?.textContent;
+  if(!text) return;
+  navigator.clipboard.writeText(text).then(()=>alert('✅ 리포트가 클립보드에 복사됐어요!')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    alert('✅ 복사됐어요!');
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// ⑤ 이전 주 데이터 비교
+// ════════════════════════════════════════════════════════
+let _prevWeekRows = [];
+
+function loadPrevWeekFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('prev-week-status');
+  statusEl.textContent = '파일 읽는 중...';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const ws = wb.Sheets['Dashboard'] || wb.Sheets[wb.SheetNames[0]];
+      const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      const headers = arr[4] || [];
+      _prevWeekRows = arr.slice(5).map(row => {
+        const obj = {};
+        headers.forEach((h,i) => { obj[h] = row[i]; });
+        return { camp: String(obj['캠페인명']||''), sub: String(obj['청약명']||''), spend: +String(obj['집행예산']||0).replace(/,/g,''), totalBudget: +String(obj['총예산']||0).replace(/,/g,''), budgetRate: +(obj['예산달성율']||0), status: String(obj['상태']||'') };
+      }).filter(r => r.camp);
+      statusEl.textContent = `✅ ${file.name} 로드 완료 (${_prevWeekRows.length}개 캠페인)`;
+      renderPrevWeekCompare();
+    } catch(err) { statusEl.textContent = '❌ 파일 읽기 실패: ' + err.message; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderPrevWeekCompare() {
+  const el = document.getElementById('prev-week-compare');
+  if(!el || !_prevWeekRows.length) return;
+  const fW = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+  const fP = (n,d=1) => Number(n).toFixed(d) + '%';
+
+  // 이번주 ACTIVE 캠페인
+  const curr = (ST.rows||[]).filter(r => r.status==='ACTIVE');
+  const currSpend = curr.reduce((a,r)=>a+(r.spend||0),0);
+  const currBudget = curr.reduce((a,r)=>a+(r.totalBudget||0),0);
+
+  // 이전주
+  const prevActive = _prevWeekRows.filter(r => r.status==='ACTIVE');
+  const prevSpend = prevActive.reduce((a,r)=>a+r.spend,0);
+  const prevBudget = prevActive.reduce((a,r)=>a+r.totalBudget,0);
+
+  const spendDiff = currSpend - prevSpend;
+  const spendDiffStr = (spendDiff>=0?'▲ +':'▼ ') + fW(Math.abs(spendDiff));
+
+  // 캠페인별 비교 (이름 매칭)
+  const matched = curr.map(r => {
+    const prev = _prevWeekRows.find(p => p.sub === r.sub || p.camp === r.camp);
+    if(!prev) return null;
+    return { name: r.sub||r.camp, currRate: r.budgetRate||0, prevRate: prev.budgetRate||0, diff: (r.budgetRate||0) - (prev.budgetRate||0) };
+  }).filter(Boolean).sort((a,b) => a.diff - b.diff);
+
+  let html = `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div style="background:var(--surface2);border-radius:8px;padding:12px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">이번주 집행 (ACTIVE)</div>
+      <div style="font-size:16px;font-weight:700">${fW(currSpend)}</div>
+      <div style="font-size:11px;color:var(--text3)">${fP(currBudget>0?currSpend/currBudget*100:0)} / ${fW(currBudget)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">이전주 집행 (ACTIVE)</div>
+      <div style="font-size:16px;font-weight:700">${fW(prevSpend)}</div>
+      <div style="font-size:11px;color:var(--text3)">${fP(prevBudget>0?prevSpend/prevBudget*100:0)} / ${fW(prevBudget)}</div>
+    </div>
+  </div>
+  <div style="font-size:12px;font-weight:600;margin-bottom:8px">주간 집행 변화: <span style="color:${spendDiff>=0?'var(--green)':'var(--red)'}">${spendDiffStr}</span></div>`;
+
+  if(matched.length) {
+    html += `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="border-bottom:1px solid var(--border)">
+      <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600">캠페인</th>
+      <th style="text-align:right;padding:5px 8px;color:var(--text3);font-weight:600">이전주</th>
+      <th style="text-align:right;padding:5px 8px;color:var(--text3);font-weight:600">이번주</th>
+      <th style="text-align:right;padding:5px 8px;color:var(--text3);font-weight:600">변화</th>
+    </tr></thead><tbody>`;
+    matched.forEach(({name, currRate, prevRate, diff}) => {
+      const dColor = diff >= 0 ? 'var(--green)' : 'var(--red)';
+      const dStr = (diff>=0?'▲ +':'▼ ') + Math.abs(diff).toFixed(1) + '%p';
+      html += `<tr style="border-bottom:1px solid var(--border2)">
+        <td style="padding:5px 8px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name.slice(0,25)}</td>
+        <td style="padding:5px 8px;text-align:right">${fP(prevRate)}</td>
+        <td style="padding:5px 8px;text-align:right">${fP(currRate)}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:600;color:${dColor}">${dStr}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  el.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+// ⑥ 알럿 이력 관리
+// ════════════════════════════════════════════════════════
+function _saveAlertHistory() {
+  if(!ST.alerts.length) return;
+  const today = new Date().toISOString().slice(0,10);
+  let history = {};
+  try { history = JSON.parse(localStorage.getItem('alert_history')||'{}'); } catch(e) {}
+
+  // 오늘 스냅샷 저장
+  history[today] = {
+    total: ST.alerts.length,
+    er: ST.alerts.filter(a=>a.sev==='er').length,
+    wn: ST.alerts.filter(a=>a.sev==='wn').length,
+    types: Object.fromEntries(
+      ['status','primetime_early','overrate','exp','budget100','over','daily'].map(t => [t, ST.alerts.filter(a=>a.type===t).length])
+    ),
+    camps: ST.alerts.slice(0,20).map(a=>({camp:a.camp.slice(0,30), type:a.type, sev:a.sev}))
+  };
+
+  // 14일치만 유지
+  const keys = Object.keys(history).sort().slice(-14);
+  const trimmed = {};
+  keys.forEach(k => { trimmed[k] = history[k]; });
+  try { localStorage.setItem('alert_history', JSON.stringify(trimmed)); } catch(e) {}
+  renderAlertHistory();
+}
+
+function clearAlertHistory() {
+  if(!confirm('알럿 이력을 초기화할까요?')) return;
+  try { localStorage.removeItem('alert_history'); } catch(e) {}
+  renderAlertHistory();
+}
+
+function renderAlertHistory() {
+  const el = document.getElementById('alert-history-list');
+  if(!el) return;
+  let history = {};
+  try { history = JSON.parse(localStorage.getItem('alert_history')||'{}'); } catch(e) {}
+  const keys = Object.keys(history).sort().reverse();
+  if(!keys.length) { el.innerHTML='<div class="empty" style="padding:1rem;font-size:12px">기록된 이력이 없어요</div>'; return; }
+
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+  <thead><tr style="border-bottom:1px solid var(--border)">
+    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600">날짜</th>
+    <th style="text-align:center;padding:5px 8px;color:var(--text3);font-weight:600">전체</th>
+    <th style="text-align:center;padding:5px 8px;color:var(--text3);font-weight:600">오류</th>
+    <th style="text-align:center;padding:5px 8px;color:var(--text3);font-weight:600">주의</th>
+    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600">유형별</th>
+  </tr></thead><tbody>`;
+
+  keys.forEach(date => {
+    const h = history[date];
+    const typeSummary = Object.entries(h.types||{}).filter(([,v])=>v>0).map(([t,v])=>`${alertLabel(t)}:${v}`).join(' ');
+    html += `<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:5px 8px;font-weight:500">${date}</td>
+      <td style="padding:5px 8px;text-align:center">${h.total}</td>
+      <td style="padding:5px 8px;text-align:center;color:var(--red)">${h.er}</td>
+      <td style="padding:5px 8px;text-align:center;color:var(--amber)">${h.wn}</td>
+      <td style="padding:5px 8px;color:var(--text3)">${typeSummary}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+
 </script>
 </body>
 </html>
