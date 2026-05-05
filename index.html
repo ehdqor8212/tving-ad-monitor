@@ -5,6 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TAS 캠페인 모니터링</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════
+// 📊 청약 트렌드 핵심 함수 (loadSubTrendFile 등)
+// ════════════════════════════════════════════════════════
+let _ST_ROWS = [];
+let _ST_METRIC = 'amt';
+let CH_ST = null;
+let CH_ST_DAILY = null;
+
+function loadSubTrendFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
+      const sheetName = wb.SheetNames.find(n =>
+        n.includes('정기청약_raw_NEW') || n.includes('raw_NEW') || n.includes('정기청약')
+      );
+      if(!sheetName) {
+        alert('정기청약_raw_NEW 시트를 찾을 수 없어요.\n시트 목록: ' + wb.SheetNames.join(', '));
+        return;
+      }
+      const ws = wb.Sheets[sheetName];
+      const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+
+      const COL = { adv:13, amt:15, bigCat:17, smallCat:18, sec:21,
+                    startDate:24, endDate:25, paid:31, newAdv:33, cpm:34, imps:35 };
+
+      let headerRow = 0;
+      for(let i=0; i<Math.min(10, arr.length); i++) {
+        const row = arr[i];
+        if(String(row[COL.bigCat]||'').includes('대분류') ||
+           String(row[COL.paid]||'').includes('유가') ||
+           String(row[COL.amt]||'').includes('청약')) {
+          headerRow = i; break;
+        }
+      }
+
+      const parseRowDate = v => {
+        if(!v) return null;
+        if(v instanceof Date) return v;
+        const s = String(v);
+        const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+        if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+        return null;
+      };
+
+      _ST_ROWS = [];
+      for(let i=headerRow+1; i<arr.length; i++) {
+        const row = arr[i];
+        if(!row[COL.amt] && !row[COL.bigCat]) continue;
+        const startDate = parseRowDate(row[COL.startDate]);
+        const endDate   = parseRowDate(row[COL.endDate]);
+        const month = startDate ? startDate.getMonth()+1 : null;
+        const year  = startDate ? startDate.getFullYear() : null;
+        const amt  = +(String(row[COL.amt] ||0).replace(/,/g,'')) || 0;
+        const imps = +(String(row[COL.imps]||0).replace(/,/g,'')) || 0;
+        const paidRaw   = String(row[COL.paid]  ||'').trim().toUpperCase();
+        const newAdvRaw = String(row[COL.newAdv]||'').trim();
+        _ST_ROWS.push({
+          adv:      String(row[COL.adv]     ||'').trim(),
+          amt, imps,
+          bigCat:   String(row[COL.bigCat]  ||'미분류').trim(),
+          smallCat: String(row[COL.smallCat]||'').trim(),
+          sec:      String(row[COL.sec]      ||'').trim(),
+          paid:     paidRaw==='Y'?'유가':paidRaw==='N'?'무가':paidRaw,
+          newAdv:   /^[○●oOyY]+$/.test(newAdvRaw)?'Y':'N',
+          cpm:      +(String(row[COL.cpm]||0).replace(/,/g,'')),
+          startDate, endDate, month, year
+        });
+      }
+      console.log('[청약트렌드] 파싱:', _ST_ROWS.length, '행, 시트:', sheetName);
+      _buildStFilters();
+      renderSubTrend();
+    } catch(err) {
+      alert('파일 읽기 오류: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -388,6 +471,32 @@
     .metric-value { font-size: 16px; }
     .header-right .slk-status { display: none; }
   }
+
+/* 다중선택 필터 */
+.stf-wrap{position:relative;display:inline-block}
+.stf-btn{font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;
+  background:var(--surface2);color:var(--text);cursor:pointer;white-space:nowrap;
+  min-width:100px;display:inline-flex;align-items:center;gap:4px;user-select:none}
+.stf-btn .stf-arrow{font-size:9px;color:var(--text3);transition:transform 0.15s}
+.stf-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:9999;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:200px;display:none;flex-direction:column;overflow:hidden}
+.stf-panel.open{display:flex}
+.stf-search-row{padding:8px 8px 6px;border-bottom:1px solid var(--border2)}
+.stf-search-row input{width:100%;box-sizing:border-box;padding:5px 8px;
+  border:1px solid var(--border);border-radius:5px;font-size:11px;
+  background:var(--surface2);color:var(--text);outline:none}
+.stf-action-row{display:flex;gap:0;border-bottom:1px solid var(--border2)}
+.stf-action-row button{flex:1;padding:5px 0;font-size:11px;color:var(--blue-text);
+  background:none;border:none;cursor:pointer;border-right:1px solid var(--border2)}
+.stf-action-row button:last-child{border-right:none}
+.stf-action-row button:hover{background:var(--surface2)}
+.stf-list{overflow-y:auto;max-height:220px}
+.stf-item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:11px;transition:background 0.1s}
+.stf-item:hover{background:var(--surface2)}
+.stf-item input[type=checkbox]{cursor:pointer;accent-color:var(--blue);width:14px;height:14px}
+.stf-active{border-color:var(--blue);background:rgba(37,99,235,0.08)}
+
 </style>
 </head>
 <body>
@@ -470,7 +579,7 @@
       <button class="tab" onclick="go('kbo-insight',this)">KBO 종합분석</button>
       <button class="tab" onclick="go('kbo-calc',this)">보너스 계산기</button>
       <button class="tab" onclick="go('kbo-alloc',this)">보너스율 배분 계산기</button>
-      <button class="tab" onclick="go('weekly',this)">📋 주간 리포트</button>
+      <button class="tab" onclick="go('sub-trend',this)">📊 청약 트렌드</button>
       <button class="tab" onclick="go('guide',this)" style="margin-left:12px;border-left:1px solid var(--border);padding-left:12px">📖 사용 가이드</button>
     </div>
   </div>
@@ -1358,50 +1467,87 @@
   </div>
 </div>
 
-<!-- 주간 리포트 -->
-<div id="sec-weekly" class="sec">
+<!-- 청약 트렌드 -->
+<div id="sec-sub-trend" class="sec">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="card-title" style="margin-bottom:0">📋 주간 리포트 자동 생성</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="generateWeeklyReport()" style="font-size:12px">⚡ 리포트 생성</button>
-        <button class="btn" onclick="copyWeeklyReport()" style="font-size:12px">📋 복사</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin-bottom:0">📊 청약 트렌드 <span style="font-size:11px;font-weight:400;color:var(--text3)">(정기청약_raw_NEW 시트 기준)</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="btn" style="cursor:pointer">
+          📂 청약 파일 업로드
+          <input type="file" accept=".xlsx,.xls" onchange="loadSubTrendFile(this)" style="display:none">
+        </label>
+        <button class="btn" onclick="downloadSubTrendCSV()" style="font-size:11px">📥 CSV 다운로드</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">리포트 기준 주차</label>
-        <input type="text" id="wr-week" placeholder="예: 4/7~4/13" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">작성자</label>
-        <input type="text" id="wr-author" placeholder="예: 홍길동" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px">
-      </div>
+
+    <!-- 필터 바 (다중선택) -->
+    <div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <input type="text" id="st-search" placeholder="광고주·상품명 검색..." oninput="renderSubTrend()"
+        style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);width:160px">
+      <!-- 다중선택 필터들은 _buildStFilters()에서 동적 생성 -->
+      <div id="st-ms-year-wrap"></div>
+      <div id="st-ms-month-wrap"></div>
+      <div id="st-ms-cat-wrap"></div>
+      <div id="st-ms-small-wrap"></div>
+      <div id="st-ms-sec-wrap"></div>
+      <div id="st-ms-paid-wrap"></div>
+      <!-- 신규광고주는 단순 select 유지 -->
+      <select id="st-new" onchange="renderSubTrend()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)">
+        <option value="">신규: 전체</option>
+        <option value="Y">신규광고주만 (○)</option>
+        <option value="N">기존광고주만</option>
+      </select>
     </div>
-    <div id="wr-output" style="background:var(--surface2);border-radius:8px;padding:14px;font-size:12px;line-height:1.8;white-space:pre-wrap;font-family:inherit;min-height:200px;color:var(--text2)">리포트 생성 버튼을 클릭하면 슬랙 복사용 리포트가 생성됩니다.</div>
+
+    <!-- 뷰 모드 -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:11px;color:var(--text3);font-weight:600">테이블 기준:</span>
+      <select id="st-view-mode" onchange="renderSubTrend()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)">
+        <option value="bigCat">상품 대분류별</option>
+        <option value="smallCat">상품 소분류별</option>
+        <option value="adv">광고주별</option>
+      </select>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div id="st-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+
+    <!-- 월별 × 상품 대분류 테이블 -->
+    <div id="st-table-wrap">
+      <div class="empty" style="padding:2rem;font-size:12px">정기청약_raw_NEW 시트가 포함된 엑셀 파일을 업로드해주세요</div>
+    </div>
+
+    <!-- 차트 -->
+    <div id="st-chart-wrap" style="display:none;margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">월별 청약 추이</div>
+        <div style="display:flex;gap:6px">
+          <button id="st-metric-amt"  onclick="setStMetric('amt')"  class="btn" style="font-size:11px;background:#1a1917;color:#fff">청약금액</button>
+          <button id="st-metric-imps" onclick="setStMetric('imps')" class="btn" style="font-size:11px">노출수</button>
+          <button id="st-metric-cnt"  onclick="setStMetric('cnt')"  class="btn" style="font-size:11px">청약 건수</button>
+        </div>
+      </div>
+      <div style="position:relative;height:300px"><canvas id="ch-st"></canvas></div>
+    </div>
   </div>
 
-  <!-- 이전 주 비교 -->
-  <div class="card">
-    <div class="card-title">📊 이전 주 데이터 비교</div>
-    <div style="margin-bottom:12px;font-size:12px;color:var(--text3)">이전 주 Dashboard 파일을 업로드하면 이번 주와 나란히 비교해요.</div>
-    <label class="btn" style="cursor:pointer;display:inline-block">
-      📂 이전 주 파일 업로드
-      <input type="file" accept=".xlsx,.xls" onchange="loadPrevWeekFile(this)" style="display:none">
-    </label>
-    <div id="prev-week-status" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
-    <div id="prev-week-compare" style="margin-top:14px"></div>
-  </div>
-
-  <!-- 알럿 이력 -->
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:0">📜 알럿 이력</div>
-      <button class="btn" onclick="clearAlertHistory()" style="font-size:11px;color:var(--text3)">🗑 이력 초기화</button>
+  <!-- 일별 필요 노출량 -->
+  <div class="card" style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--text)">📅 일별 필요 노출량 <span style="font-size:11px;font-weight:400;color:var(--text3)">(시작일~종료일 기간 균등 배분)</span></div>
+      <div style="display:flex;gap:6px">
+        <select id="st-daily-group" onchange="renderStDaily()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)">
+          <option value="bigCat">상품 대분류별</option>
+          <option value="smallCat">상품 소분류별</option>
+        </select>
+      </div>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">파일 업로드 시 알럿 상태가 자동 기록돼요. 최근 14일치 이력을 보여줘요.</div>
-    <div id="alert-history-list">
-      <div class="empty" style="padding:1rem;font-size:12px">기록된 이력이 없어요</div>
+    <div id="st-daily-wrap">
+      <div class="empty" style="padding:1rem;font-size:12px">파일 업로드 후 표시됩니다</div>
+    </div>
+    <div id="st-daily-chart-wrap" style="display:none;margin-top:16px;position:relative;height:280px">
+      <canvas id="ch-st-daily"></canvas>
     </div>
   </div>
 </div>
@@ -1481,6 +1627,12 @@ function go(id,el){
   if(id==='kbo-insight') renderKBOInsight();
   if(id==='kbo-alloc'){ _alLoad(); alCalc(); }
   if(id==='weekly'){ generateWeeklyReport(); renderPrevWeekCompare(); renderAlertHistory(); }
+  // 개요 탭 돌아올 때 스크롤 복원, 다른 탭은 맨 위
+  if(id==='ov') {
+    requestAnimationFrame(() => window.scrollTo(0, _ovScrollY));
+  } else {
+    window.scrollTo(0, 0);
+  }
 }
 
 function parseDate(v){
@@ -3760,8 +3912,8 @@ function renderSubTable(type){
   let html=`<table><thead><tr>
     <th class="col-sticky" style="left:0;min-width:60px">분류</th>
     <th class="col-sticky" style="left:60px;min-width:50px;cursor:pointer;user-select:none" onclick="sortSubBy('${type}','status')">상태${si2('status')}</th>
-    <th class="col-sticky" style="left:110px;min-width:160px;max-width:200px">청약명</th>
-    <th class="col-sticky" style="left:270px;min-width:140px">상품템플릿</th>
+    <th class="col-sticky" style="left:110px;min-width:240px">청약명</th>
+    <th class="col-sticky" style="left:350px;min-width:220px">상품템플릿</th>
     ${sh2('priority','우선순위','left:410px;min-width:60px;text-align:center')}
     ${sh2('cpx','과금단가','left:470px;min-width:90px;text-align:right')}
     <th class="col-sticky col-sticky-last" style="left:560px;min-width:110px;text-align:right;cursor:pointer;user-select:none" onclick="sortSubBy('${type}','totalBudget')">총예산${si2('totalBudget')}</th>
@@ -3800,8 +3952,8 @@ function renderSubTable(type){
     html+=`<tr style="${rowBg}">
       <td class="col-sticky" style="left:0">${tagBtn}</td>
       <td class="col-sticky" style="left:60px"><span class="badge ${sBadge}">${r.status||'—'}</span></td>
-      <td class="col-sticky" style="left:110px;max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}</td>
-      <td class="col-sticky" style="left:270px;max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
+      <td class="col-sticky" style="left:110px;min-width:240px;max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}</td>
+      <td class="col-sticky" style="left:350px;min-width:220px;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
       <td class="col-sticky" style="left:410px;text-align:center">${r.priority!==null?r.priority:'—'}</td>
       <td class="col-sticky" style="left:470px;text-align:right">${r.cpx!==null?fmtW(r.cpx):'—'}</td>
       <td class="col-sticky col-sticky-last" style="left:560px;text-align:right">${fmtW(r.totalBudget)}</td>
@@ -4176,8 +4328,8 @@ function renderTable(){
   // 고정 컬럼 left 오프셋 계산 (상태:50, 청약명:160, 상품템플릿:140, 우선순위:60, 과금단가:90 → 총예산까지)
   let html=`<table><thead><tr>
     <th class="col-sticky" style="left:0;min-width:50px;cursor:pointer;user-select:none" onclick="sortBy('status')">상태${si('status')}</th>
-    <th class="col-sticky" style="left:50px;min-width:160px;max-width:200px">청약명</th>
-    <th class="col-sticky" style="left:210px;min-width:140px">상품템플릿</th>
+    <th class="col-sticky" style="left:50px;min-width:240px">청약명</th>
+    <th class="col-sticky" style="left:290px;min-width:220px">상품템플릿</th>
     <th class="col-sticky" style="left:350px;min-width:60px;text-align:center;cursor:pointer;user-select:none" onclick="sortBy('priority')">우선순위${si('priority')}</th>
     <th class="col-sticky" style="left:410px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('cpx')">과금단가${si('cpx')}</th>
     <th class="col-sticky col-sticky-last" style="left:500px;min-width:110px;text-align:right;cursor:pointer;user-select:none" onclick="sortBy('totalBudget')">총예산${si('totalBudget')}</th>
@@ -4218,8 +4370,8 @@ function renderTable(){
       : `<button onclick="toggleKBO('${r.id}',true)" style="font-size:10px;padding:1px 5px;border:1px solid var(--red-border);border-radius:3px;background:var(--red-bg);color:var(--red-text);cursor:pointer;margin-left:4px" title="KBO로 이동">→KBO</button>`;
     html+=`<tr style="${rowBg}">
       <td class="col-sticky" style="left:0"><span class="badge ${sBadge}">${r.status||'—'}</span></td>
-      <td class="col-sticky" style="left:50px;max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}${tagBtn}</td>
-      <td class="col-sticky" style="left:210px;max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
+      <td class="col-sticky" style="left:50px;min-width:240px;max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.sub}">${r.sub||'—'}${tagBtn}</td>
+      <td class="col-sticky" style="left:290px;min-width:220px;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${r.tmpl||''}">${r.tmpl||'—'}</td>
       <td class="col-sticky" style="left:350px;text-align:center">${r.priority!==null?r.priority:'—'}</td>
       <td class="col-sticky" style="left:410px;text-align:right">${r.cpx!==null?fmtW(r.cpx):'—'}</td>
       <td class="col-sticky col-sticky-last" style="left:500px;text-align:right">${fmtW(r.totalBudget)}</td>
@@ -5760,6 +5912,597 @@ function renderAlertHistory() {
 }
 
 
+
+// ════════════════════════════════
+// 일별 필요 노출량
+// ════════════════════════════════
+
+
+// ── 청약 트렌드 필터/렌더 함수 ──
+
+// ══════════════════════════════════════════
+// 다중선택 필터 컴포넌트 (_stfCreate 등)
+// ══════════════════════════════════════════
+const _stfState  = {};
+const _stfValues = {};
+
+function _stfCreate(id, label, values) {
+  _stfValues[id] = values;
+  if(!_stfState[id]) _stfState[id] = new Set();
+  const wrap = document.createElement('div');
+  wrap.className = 'stf-wrap';
+  wrap.innerHTML = `
+    <div class="stf-btn" id="${id}-btn" onclick="event.stopPropagation();_stfToggle('${id}')">
+      <span id="${id}-lbl">${label}: 전체</span>
+      <span class="stf-arrow" id="${id}-arrow">▾</span>
+    </div>
+    <div class="stf-panel" id="${id}-panel" onclick="event.stopPropagation()">
+      <div class="stf-search-row">
+        <input type="text" placeholder="${label} 검색..." id="${id}-search"
+          oninput="_stfSearch('${id}',this.value)" autocomplete="off">
+      </div>
+      <div class="stf-action-row">
+        <button onclick="_stfAll('${id}',true)">전체 선택</button>
+        <button onclick="_stfAll('${id}',false)">전체 해제</button>
+      </div>
+      <div class="stf-list" id="${id}-list"></div>
+    </div>`;
+  _stfRebuildList(id, '');
+  return wrap;
+}
+
+function _stfRebuildList(id, q) {
+  const listEl = document.getElementById(id+'-list');
+  if(!listEl) return;
+  const sel    = _stfState[id] || new Set();
+  const isNone = sel.has('__none__');
+  const norm   = s => String(s).replace(/\s+/g,'').toLowerCase();
+  const filtered = (_stfValues[id]||[]).filter(v => !q || norm(v).includes(norm(q)));
+  listEl.innerHTML = filtered.map(v => {
+    const checked = !isNone && (sel.size===0 || sel.has(v));
+    return `<label class="stf-item">
+      <input type="checkbox" ${checked?'checked':''} onchange="_stfChange('${id}','${v.replace(/'/g,"\\'")}',this.checked)">
+      <span>${v}</span></label>`;
+  }).join('');
+}
+
+function _stfSearch(id, q) { _stfRebuildList(id, q); }
+
+function _stfChange(id, val, checked) {
+  const vals = _stfValues[id] || [];
+  let sel = _stfState[id] || new Set();
+  if(sel.has('__none__')) { sel = new Set(); _stfState[id] = sel; }
+  if(!checked && sel.size===0) {
+    vals.forEach(v => { if(v!==val) sel.add(v); });
+  } else if(checked) {
+    sel.add(val);
+    if(sel.size===vals.length) _stfState[id] = new Set();
+  } else {
+    sel.delete(val);
+    if(sel.size===0) _stfState[id] = new Set(['__none__']);
+  }
+  _stfUpdateLabel(id);
+  _stfRebuildList(id, document.getElementById(id+'-search')?.value||'');
+  renderSubTrend();
+}
+
+function _stfAll(id, selectAll) {
+  _stfState[id] = selectAll ? new Set() : new Set(['__none__']);
+  _stfUpdateLabel(id);
+  _stfRebuildList(id, document.getElementById(id+'-search')?.value||'');
+  renderSubTrend();
+}
+
+function _stfToggle(id) {
+  document.querySelectorAll('.stf-panel.open').forEach(p => {
+    if(p.id!==id+'-panel') {
+      p.classList.remove('open');
+      const bid=p.id.replace('-panel','');
+      const arr=document.getElementById(bid+'-arrow');
+      if(arr) arr.style.transform='';
+    }
+  });
+  const panel=document.getElementById(id+'-panel');
+  const arrow=document.getElementById(id+'-arrow');
+  if(!panel) return;
+  const isOpen=panel.classList.toggle('open');
+  if(arrow) arrow.style.transform=isOpen?'rotate(180deg)':'';
+  if(isOpen) document.getElementById(id+'-search')?.focus();
+}
+
+function _stfUpdateLabel(id) {
+  const sel   = _stfState[id] || new Set();
+  const total = (_stfValues[id]||[]).length;
+  const labelMap = {
+    'st-ms-year':'연도','st-ms-month':'월','st-ms-cat':'대분류',
+    'st-ms-small':'소분류','st-ms-sec':'초수','st-ms-paid':'유가여부'
+  };
+  const base  = labelMap[id]||id;
+  const lblEl = document.getElementById(id+'-lbl');
+  const btnEl = document.getElementById(id+'-btn');
+  if(!lblEl) return;
+  const isNone = sel.has('__none__');
+  const isAll  = !isNone && (sel.size===0 || sel.size===total);
+  lblEl.textContent = isNone?`${base}: 없음`:isAll?`${base}: 전체`:`${base}: ${sel.size}개 선택`;
+  if(btnEl) btnEl.classList.toggle('stf-active', !isAll && !isNone);
+}
+
+function _getMultiSelected(id) {
+  const sel = _stfState[id];
+  if(!sel||sel.size===0) return null;
+  if(sel.has('__none__')) return new Set();
+  return sel;
+}
+
+// 외부 클릭 시 패널 닫기
+document.addEventListener('click', () => {
+  document.querySelectorAll('.stf-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const bid=p.id.replace('-panel','');
+    const arr=document.getElementById(bid+'-arrow');
+    if(arr) arr.style.transform='';
+  });
+});
+
+function _buildStFilters() {
+  const years  = [...new Set(_ST_ROWS.filter(r=>r.year).map(r=>String(r.year)))].sort();
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const cats   = [...new Set(_ST_ROWS.map(r=>r.bigCat).filter(Boolean))].sort();
+  const smalls = [...new Set(_ST_ROWS.map(r=>r.smallCat).filter(Boolean))].sort();
+  const secs   = [...new Set(_ST_ROWS.map(r=>r.sec).filter(Boolean))].sort();
+  const paids  = ['유가','무가'];
+
+  const _ins = (wrapId, comp) => {
+    const el = document.getElementById(wrapId);
+    if(el){ el.innerHTML=''; el.appendChild(comp); }
+  };
+  _ins('st-ms-year-wrap',  _stfCreate('st-ms-year',  '연도',      years));
+  _ins('st-ms-month-wrap', _stfCreate('st-ms-month', '월',        months));
+  _ins('st-ms-cat-wrap',   _stfCreate('st-ms-cat',   '상품 대분류', cats));
+  _ins('st-ms-small-wrap', _stfCreate('st-ms-small', '상품 소분류', smalls));
+  _ins('st-ms-sec-wrap',   _stfCreate('st-ms-sec',   '초수',       secs));
+  _ins('st-ms-paid-wrap',  _stfCreate('st-ms-paid',  '유가여부',   paids));
+}
+
+function _buildStSmallCats() {}
+
+function _getStFiltered() {
+  const norm = s => String(s||'').replace(/\s+/g,'').toLowerCase();
+  const fSearch = norm(document.getElementById('st-search')?.value || '');
+  const fNew    = document.getElementById('st-new')?.value || '';
+
+  const selYear  = _getMultiSelected('st-ms-year');
+  const selMonth = _getMultiSelected('st-ms-month');
+  const selCat   = _getMultiSelected('st-ms-cat');
+  const selSmall = _getMultiSelected('st-ms-small');
+  const selSec   = _getMultiSelected('st-ms-sec');
+  const selPaid  = _getMultiSelected('st-ms-paid');
+
+  return _ST_ROWS.filter(r => {
+    if(fSearch && !norm(r.bigCat).includes(fSearch) && !norm(r.smallCat).includes(fSearch) && !norm(r.adv).includes(fSearch)) return false;
+    if(selYear  !== null) { if(selYear.size===0  || !selYear.has(String(r.year)))      return false; }
+    if(selMonth !== null) { if(selMonth.size===0 || !selMonth.has(String(r.month)+'월')) return false; }
+    if(selCat   !== null) { if(selCat.size===0   || !selCat.has(r.bigCat))             return false; }
+    if(selSmall !== null) { if(selSmall.size===0 || !selSmall.has(r.smallCat))         return false; }
+    if(selSec   !== null) { if(selSec.size===0   || !selSec.has(r.sec))                return false; }
+    if(selPaid  !== null) { if(selPaid.size===0  || !selPaid.has(r.paid))              return false; }
+    if(fNew     && r.newAdv !== fNew) return false;
+    return true;
+  });
+}
+
+function toggleStAdv(catId) {
+  const rows = document.querySelectorAll('.' + catId + '-adv');
+  const icon = document.getElementById(catId + '-icon');
+  const isHidden = rows[0]?.style.display === 'none';
+  rows.forEach(r => r.style.display = isHidden ? '' : 'none');
+  if(icon) icon.textContent = isHidden ? '▼' : '▶';
+}
+
+function renderSubTrend() {
+  if(!_ST_ROWS.length) return;
+  setTimeout(renderStDaily, 0);
+
+  const rows = _getStFiltered();
+  const fW = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+
+  const totalAmt  = rows.reduce((s,r)=>s+r.amt,  0);
+  const totalImps = rows.reduce((s,r)=>s+r.imps, 0);
+  const totalCnt  = rows.length;
+  const newAdvCnt = rows.filter(r=>r.newAdv==='Y').length;
+
+  const sumEl = document.getElementById('st-summary');
+  if(sumEl) sumEl.innerHTML = `
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--blue)">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">총 청약금액</div>
+      <div style="font-size:18px;font-weight:700;color:var(--blue-text)">${fW(totalAmt)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--green)">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">총 노출수</div>
+      <div style="font-size:18px;font-weight:700">${fN(totalImps)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--amber)">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">총 청약 건수</div>
+      <div style="font-size:18px;font-weight:700">${fN(totalCnt)}건</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--red)">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">신규광고주</div>
+      <div style="font-size:18px;font-weight:700;color:var(--red)">${fN(newAdvCnt)}건</div>
+      <div style="font-size:10px;color:var(--text3)">(${totalCnt>0?(newAdvCnt/totalCnt*100).toFixed(1):0}%)</div>
+    </div>`;
+
+  const stView = document.getElementById('st-view-mode')?.value || 'bigCat';
+  const months = [...new Set(rows.filter(r=>r.year&&r.month).map(r=>`${r.year}-${String(r.month).padStart(2,'0')}`))]
+    .sort();
+  const cats   = [...new Set(rows.map(r=>r.bigCat))].sort();
+  const viewCats = stView==='adv'
+    ? [...new Set(rows.map(r=>r.adv||'미분류'))].sort()
+    : stView==='smallCat'
+      ? [...new Set(rows.map(r=>r.smallCat||'미분류'))].sort()
+      : cats;
+
+  const aggView = {};
+  rows.forEach(r => {
+    if(!r.year||!r.month) return;
+    const mk = `${r.year}-${String(r.month).padStart(2,'0')}`;
+    const gKey = stView==='adv'?(r.adv||'미분류'):stView==='smallCat'?(r.smallCat||'미분류'):r.bigCat;
+    if(!aggView[mk]) aggView[mk]={};
+    if(!aggView[mk][gKey]) aggView[mk][gKey]={amt:0,imps:0,cnt:0,newAdv:0};
+    aggView[mk][gKey].amt   +=r.amt; aggView[mk][gKey].imps+=r.imps;
+    aggView[mk][gKey].cnt   +=1;     aggView[mk][gKey].newAdv+=r.newAdv==='Y'?1:0;
+  });
+
+  const viewLabel = stView==='adv'?'광고주':stView==='smallCat'?'상품 소분류':'상품 대분류';
+  if(!months.length) {
+    document.getElementById('st-table-wrap').innerHTML='<div class="empty" style="padding:1rem;font-size:12px">해당 조건에 데이터가 없어요</div>';
+    document.getElementById('st-chart-wrap').style.display='none';
+    return;
+  }
+
+  let tbl = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+  <thead><tr style="border-bottom:2px solid var(--border)">
+    <th style="text-align:left;padding:7px 10px;color:var(--text3);font-weight:600;min-width:120px">${viewLabel}</th>
+    ${months.map(m=>`<th style="text-align:right;padding:7px 8px;color:var(--text3);font-weight:600;white-space:nowrap">${m.replace(/(\d{4})-(\d+)/,'$1년 $2월')}</th>`).join('')}
+    <th style="text-align:right;padding:7px 10px;color:var(--text3);font-weight:600">합계</th>
+  </tr></thead><tbody>`;
+
+  viewCats.forEach(cat => {
+    const rowTotal = months.reduce((s,m)=>s+(aggView[m]?.[cat]?.amt||0),0);
+    if(rowTotal===0) return;
+    const catRows = rows.filter(r=>r[stView]===cat);
+    const advList = [...new Set(catRows.map(r=>r.adv||'미분류'))].sort();
+    const hasAdv  = advList.length>0 && stView!=='adv';
+    const catId   = 'stc-'+cat.replace(/[^a-zA-Z0-9가-힣]/g,'_');
+    tbl += `<tr style="border-bottom:1px solid var(--border2);cursor:${hasAdv?'pointer':'default'}"
+              onclick="${hasAdv?`toggleStAdv('${catId}')`:''}" >
+      <td style="padding:7px 10px;font-weight:600;color:var(--text)">
+        ${hasAdv?`<span id="${catId}-icon" style="font-size:10px;margin-right:4px">▶</span>`:''}${cat}
+        ${hasAdv?`<span style="font-size:10px;color:var(--text3)">(${advList.length}개 광고주)</span>`:''}
+      </td>
+      ${months.map(m=>{const v=aggView[m]?.[cat];if(!v||v.amt===0)return`<td style="padding:7px 8px;text-align:right;color:var(--text3)">—</td>`;
+        return`<td style="padding:7px 8px;text-align:right"><div style="font-weight:600">${fW(v.amt)}</div><div style="font-size:10px;color:var(--text3)">${fN(v.imps)} imps</div><div style="font-size:10px;color:var(--text3)">${v.cnt}건${v.newAdv?` / 신규${v.newAdv}`:''}</div></td>`;}).join('')}
+      <td style="padding:7px 10px;text-align:right;font-weight:700;color:var(--blue-text)">${fW(rowTotal)}</td>
+    </tr>`;
+    if(hasAdv) advList.forEach(adv=>{
+      const aRows=catRows.filter(r=>(r.adv||'미분류')===adv);
+      const aAgg={};
+      aRows.forEach(r=>{const mk=`${r.year}-${String(r.month).padStart(2,'0')}`;if(!aAgg[mk])aAgg[mk]={amt:0,imps:0,cnt:0,newAdv:0};aAgg[mk].amt+=r.amt;aAgg[mk].imps+=r.imps;aAgg[mk].cnt+=1;aAgg[mk].newAdv+=r.newAdv==='Y'?1:0;});
+      const aTotal=months.reduce((s,m)=>s+(aAgg[m]?.amt||0),0);
+      tbl+=`<tr class="${catId}-adv" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border2)">
+        <td style="padding:5px 10px 5px 28px;color:var(--text2);font-size:11px">└ ${adv}</td>
+        ${months.map(m=>{const v=aAgg[m];if(!v||v.amt===0)return`<td style="padding:5px 8px;text-align:right;color:var(--text3);font-size:11px">—</td>`;return`<td style="padding:5px 8px;text-align:right;font-size:11px"><div>${fW(v.amt)}</div><div style="font-size:10px;color:var(--text3)">${fN(v.imps)} imps · ${v.cnt}건</div></td>`;}).join('')}
+        <td style="padding:5px 10px;text-align:right;font-size:11px;color:var(--blue-text)">${fW(aTotal)}</td>
+      </tr>`;
+    });
+  });
+
+  // 합계 행
+  tbl+=`<tr style="border-top:2px solid var(--border);background:var(--surface2);font-weight:700">
+    <td style="padding:7px 10px">합계</td>
+    ${months.map(m=>{const mT=viewCats.reduce((s,c)=>s+(aggView[m]?.[c]?.amt||0),0);const mI=viewCats.reduce((s,c)=>s+(aggView[m]?.[c]?.imps||0),0);const mC=viewCats.reduce((s,c)=>s+(aggView[m]?.[c]?.cnt||0),0);const mN=viewCats.reduce((s,c)=>s+(aggView[m]?.[c]?.newAdv||0),0);return`<td style="padding:7px 8px;text-align:right"><div>${fW(mT)}</div><div style="font-size:10px;color:var(--text3)">${fN(mI)} imps</div><div style="font-size:10px;color:var(--text3)">${mC}건${mN?` / 신규${mN}`:''}</div></td>`;}).join('')}
+    <td style="padding:7px 10px;text-align:right;color:var(--blue-text)">${fW(totalAmt)}</td>
+  </tr></tbody></table></div>`;
+
+  document.getElementById('st-table-wrap').innerHTML=tbl;
+  document.getElementById('st-chart-wrap').style.display='block';
+  _renderStChart(rows, months, viewCats, aggView, stView);
+}
+
+function _renderStChart(rows, months, cats, agg, stView='bigCat') {
+  const ctxEl = document.getElementById('ch-st');
+  if(!ctxEl) return;
+  if(CH_ST) CH_ST.destroy();
+  const COLORS=['rgba(37,99,235,0.75)','rgba(220,38,38,0.70)','rgba(5,150,105,0.70)',
+    'rgba(217,119,6,0.70)','rgba(124,58,237,0.70)','rgba(236,72,153,0.70)',
+    'rgba(14,165,233,0.70)','rgba(245,158,11,0.70)','rgba(6,182,212,0.70)',
+    'rgba(239,68,68,0.65)','rgba(16,185,129,0.65)','rgba(168,85,247,0.70)'];
+  const fW=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
+  const fN=n=>Math.round(n).toLocaleString('ko-KR');
+  const fV=n=>_ST_METRIC==='amt'?fW(n):_ST_METRIC==='imps'?fN(n)+' imps':fN(n)+'건';
+  const getVal=(m,c)=>{const v=agg[m]?.[c];if(!v)return 0;return _ST_METRIC==='amt'?v.amt:_ST_METRIC==='imps'?v.imps:v.cnt;};
+  const nM=months.length;
+  const labels=months.map(m=>m.replace('-0','-').replace(/(\d{4})-(\d+)/,'$1년 $2월'));
+  const datasets=cats.map((cat,i)=>({
+    label:cat,data:months.map(m=>getVal(m,cat)),
+    backgroundColor:COLORS[i%COLORS.length],borderRadius:3,stack:'stack'
+  })).filter(d=>d.data.some(v=>v>0));
+  CH_ST=new Chart(ctxEl,{type:'bar',data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{color:'#8f8fa0',font:{size:10},boxWidth:10,padding:10}},
+      tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>ctx.raw>0?`${ctx.dataset.label}: ${fV(ctx.raw)}`:null,footer:items=>`합계: ${fV(items.reduce((s,i)=>s+(i.raw||0),0))}`}}},
+    scales:{
+      x:{stacked:true,ticks:{color:'#5e5e6e',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'},
+        categoryPercentage:nM===1?0.25:0.85,barPercentage:0.95},
+      y:{stacked:true,ticks:{color:'#5e5e6e',font:{size:10},callback:v=>_ST_METRIC==='amt'?(v>=1e8?'₩'+(v/1e8).toFixed(1)+'억':v>=1e6?'₩'+(v/1e6).toFixed(0)+'M':'₩'+v):(v>=1e6?(v/1e6).toFixed(1)+'M':v)},grid:{color:'rgba(255,255,255,0.06)'}}
+    }
+  }});
+}
+
+function renderStDaily() {
+  const el = document.getElementById('st-daily-wrap');
+  const chartWrap = document.getElementById('st-daily-chart-wrap');
+  if(!el) return;
+
+  const rows = _getStFiltered().filter(r => r.startDate && r.endDate && r.imps > 0);
+  if(!rows.length) {
+    el.innerHTML = '<div class="empty" style="padding:1.5rem;font-size:12px;text-align:center">필터 조건에 해당하는 데이터가 없어요<br><span style="color:var(--text3);font-size:11px">월 필터를 선택하면 해당 월만 표시돼요</span></div>';
+    if(chartWrap) chartWrap.style.display = 'none';
+    return;
+  }
+
+  const groupBy = document.getElementById('st-daily-group')?.value || 'bigCat';
+
+  // 날짜 범위: 월 필터 선택 시 해당 월로 제한
+  const selMonths = _getMultiSelected('st-ms-month');
+  const selYears  = _getMultiSelected('st-ms-year');
+
+  let minDate = null, maxDate = null;
+  rows.forEach(r => {
+    if(!minDate || r.startDate < minDate) minDate = new Date(r.startDate);
+    if(!maxDate || r.endDate > maxDate)   maxDate = new Date(r.endDate);
+  });
+
+  // 단일 월 선택 시 그 월로 제한
+  if(selMonths && selMonths.size === 1) {
+    const mStr = [...selMonths][0].replace('월','');
+    const yr   = selYears?.size===1 ? +[...selYears][0].replace('년','') : minDate.getFullYear();
+    const mo   = +mStr - 1;
+    minDate = new Date(Math.max(minDate, new Date(yr, mo, 1)));
+    maxDate = new Date(Math.min(maxDate, new Date(yr, mo+1, 0)));
+  } else if(!selMonths) {
+    // 전체: 범위가 너무 넓으면 최근 3개월로 제한
+    const limit = new Date(maxDate);
+    limit.setMonth(limit.getMonth() - 2);
+    limit.setDate(1);
+    if(maxDate - minDate > 90 * 86400000) minDate = new Date(Math.max(minDate, limit));
+  }
+
+  const totalDays = Math.max(1, Math.round((maxDate - minDate) / 86400000) + 1);
+
+  // 그룹별 일별 노출량 집계
+  const groups  = [...new Set(rows.map(r => r[groupBy] || '미분류'))].sort();
+  const dayMap  = {}; // 'YYYY-MM-DD' → { groupKey → imps }
+  const dateSet = new Set();
+
+  rows.forEach(r => {
+    const days       = Math.max(1, Math.round((r.endDate - r.startDate) / 86400000) + 1);
+    const dailyImps  = r.imps / days;
+    const gKey       = r[groupBy] || '미분류';
+    const loopStart  = new Date(Math.max(r.startDate, minDate));
+    const loopEnd    = new Date(Math.min(r.endDate,   maxDate));
+
+    for(let d = new Date(loopStart); d <= loopEnd; d.setDate(d.getDate()+1)) {
+      const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      dateSet.add(dk);
+      if(!dayMap[dk]) dayMap[dk] = {};
+      dayMap[dk][gKey] = (dayMap[dk][gKey] || 0) + dailyImps;
+    }
+  });
+
+  const dateKeys = [...dateSet].sort();
+  if(!dateKeys.length) {
+    el.innerHTML = '<div class="empty" style="padding:1.5rem;font-size:12px;text-align:center">해당 기간에 데이터가 없어요</div>';
+    if(chartWrap) chartWrap.style.display = 'none';
+    return;
+  }
+
+  // ── 차트 먼저 ──
+  if(chartWrap) chartWrap.style.display = 'block';
+  const ctxEl = document.getElementById('ch-st-daily');
+  if(ctxEl) {
+    if(CH_ST_DAILY) CH_ST_DAILY.destroy();
+    const COLORS = [
+      'rgba(37,99,235,0.80)','rgba(5,150,105,0.75)','rgba(220,38,38,0.70)',
+      'rgba(217,119,6,0.75)','rgba(124,58,237,0.70)','rgba(236,72,153,0.70)',
+      'rgba(14,165,233,0.75)','rgba(245,158,11,0.70)','rgba(6,182,212,0.70)',
+      'rgba(239,68,68,0.65)','rgba(16,185,129,0.65)','rgba(168,85,247,0.70)',
+    ];
+    const datasets = groups.map((g,i) => ({
+      label: g,
+      data: dateKeys.map(dk => Math.round(dayMap[dk]?.[g]||0)),
+      backgroundColor: COLORS[i%COLORS.length],
+      borderRadius: 1, stack:'imps'
+    })).filter(d => d.data.some(v=>v>0));
+
+    // 차트 높이: 날짜 수에 따라 조정
+    const chartH = Math.max(260, Math.min(400, 200 + dateKeys.length * 6));
+    ctxEl.parentElement.style.height = chartH + 'px';
+
+    const fN = n => Math.round(n).toLocaleString('ko-KR');
+    CH_ST_DAILY = new Chart(ctxEl, {
+      type:'bar',
+      data:{ labels: dateKeys.map(dk=>dk.slice(5)), datasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:'right', labels:{color:'#8f8fa0',font:{size:10},boxWidth:10,padding:6} },
+          tooltip:{
+            mode:'index', intersect:false,
+            callbacks:{
+              title: items => items[0]?.label ? dateKeys[items[0].dataIndex] : '',
+              label: ctx => ctx.raw>0 ? `${ctx.dataset.label}: ${fN(ctx.raw)}` : null,
+              footer: items => `합계: ${fN(items.reduce((s,i)=>s+(i.raw||0),0))}`
+            }
+          }
+        },
+        scales:{
+          x:{ stacked:true, ticks:{color:'#5e5e6e',font:{size:9},maxRotation:45,
+                maxTicksLimit: Math.min(dateKeys.length, 31)},
+              grid:{color:'rgba(255,255,255,0.03)'},
+              categoryPercentage: dateKeys.length<=7?0.4:0.9, barPercentage:0.95 },
+          y:{ stacked:true, ticks:{color:'#5e5e6e',font:{size:10},
+                callback: v => v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v},
+              grid:{color:'rgba(255,255,255,0.05)'} }
+        }
+      }
+    });
+  }
+
+  // ── 하단 수치 테이블 ──
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+  const colW = Math.max(60, Math.round(700/Math.min(dateKeys.length, 31)));
+
+  let tbl = `<div style="overflow-x:auto;margin-top:16px;font-size:11px">
+  <table style="border-collapse:collapse;min-width:100%">
+  <thead><tr style="border-bottom:2px solid var(--border);background:var(--surface2)">
+    <th style="text-align:left;padding:5px 10px;white-space:nowrap;position:sticky;left:0;background:var(--surface2);z-index:2;min-width:120px;color:var(--text3)">상품</th>
+    ${dateKeys.map(dk=>`<th style="text-align:right;padding:5px 6px;white-space:nowrap;min-width:${colW}px;color:var(--text3)">${dk.slice(5)}</th>`).join('')}
+    <th style="text-align:right;padding:5px 10px;white-space:nowrap;color:var(--text3);position:sticky;right:0;background:var(--surface2)">합계</th>
+  </tr></thead><tbody>`;
+
+  groups.filter(g => dateKeys.some(dk=>(dayMap[dk]?.[g]||0)>0)).forEach((g,gi) => {
+    const COLORS=['#2563eb','#059669','#dc2626','#d97706','#7c3aed','#ec4899',
+                  '#0ea5e9','#f59e0b','#06b6d4','#ef4444','#10b981','#a855f7'];
+    const color = COLORS[gi % COLORS.length];
+    const rowTotal = dateKeys.reduce((s,dk)=>s+(dayMap[dk]?.[g]||0),0);
+    tbl += `<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:4px 10px;font-weight:600;color:${color};white-space:nowrap;position:sticky;left:0;background:var(--surface)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:5px"></span>${g}
+      </td>
+      ${dateKeys.map(dk=>{
+        const v=Math.round(dayMap[dk]?.[g]||0);
+        return v>0?`<td style="padding:4px 6px;text-align:right">${fN(v)}</td>`
+                  :`<td style="padding:4px 6px;text-align:right;color:var(--text3)">—</td>`;
+      }).join('')}
+      <td style="padding:4px 10px;text-align:right;font-weight:700;color:var(--blue-text);position:sticky;right:0;background:var(--surface)">${fN(Math.round(rowTotal))}</td>
+    </tr>`;
+  });
+
+  // 합계 행
+  const totals = dateKeys.map(dk => groups.reduce((s,g)=>s+(dayMap[dk]?.[g]||0),0));
+  tbl += `<tr style="border-top:2px solid var(--border);background:var(--surface2);font-weight:700">
+    <td style="padding:5px 10px;position:sticky;left:0;background:var(--surface2)">합계 · 일노출량</td>
+    ${totals.map(v=>`<td style="padding:5px 6px;text-align:right">${fN(Math.round(v))}</td>`).join('')}
+    <td style="padding:5px 10px;text-align:right;color:var(--blue-text);position:sticky;right:0;background:var(--surface2)">${fN(Math.round(totals.reduce((s,v)=>s+v,0)))}</td>
+  </tr></tbody></table></div>`;
+
+  el.innerHTML = tbl;
+}
+
+
+function _renderStChart(rows, months, cats, agg, stView='bigCat') {
+  const ctxEl = document.getElementById('ch-st');
+  if(!ctxEl) return;
+  if(CH_ST) CH_ST.destroy();
+
+  const COLORS = [
+    'rgba(37,99,235,0.75)','rgba(220,38,38,0.70)','rgba(5,150,105,0.70)',
+    'rgba(217,119,6,0.70)','rgba(124,58,237,0.70)','rgba(236,72,153,0.70)',
+    'rgba(14,165,233,0.70)','rgba(245,158,11,0.70)','rgba(6,182,212,0.70)',
+    'rgba(239,68,68,0.65)','rgba(16,185,129,0.65)','rgba(168,85,247,0.70)',
+  ];
+  const fW = n => '₩'+Math.round(n).toLocaleString('ko-KR');
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+
+  const getVal = (m,c) => {
+    const v = agg[m]?.[c];
+    if(!v) return 0;
+    if(_ST_METRIC==='amt')  return v.amt;
+    if(_ST_METRIC==='imps') return v.imps;
+    return v.cnt;
+  };
+  const fV = n => _ST_METRIC==='amt'?fW(n):_ST_METRIC==='imps'?fN(n)+' imps':fN(n)+'건';
+
+  const labels = months.map(m => m.replace('-0','-').replace(/(\d{4})-(\d+)/,'$1년 $2월'));
+  const datasets = cats.map((cat,i) => ({
+    label: cat,
+    data: months.map(m => getVal(m,cat)),
+    backgroundColor: COLORS[i%COLORS.length],
+    borderRadius: 3,
+    stack: 'stack'
+  })).filter(d => d.data.some(v=>v>0));
+
+  const nMonths = months.length;
+  CH_ST = new Chart(ctxEl, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'top', labels:{ color:'#8f8fa0', font:{size:10}, boxWidth:10, padding:10 } },
+        tooltip: {
+          mode:'index', intersect:false,
+          callbacks: {
+            label: ctx => ctx.raw>0 ? `${ctx.dataset.label}: ${fV(ctx.raw)}` : null,
+            footer: items => `합계: ${fV(items.reduce((s,i)=>s+(i.raw||0),0))}`
+          }
+        }
+      },
+      scales: {
+        x: { stacked:true, ticks:{color:'#5e5e6e',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'}, categoryPercentage: nMonths===1?0.25:0.85, barPercentage:0.9 },
+        y: { stacked:true, ticks:{color:'#5e5e6e',font:{size:10},
+          callback: v => _ST_METRIC==='amt'?(v>=1e8?'₩'+(v/1e8).toFixed(1)+'억':v>=1e6?'₩'+(v/1e6).toFixed(0)+'M':'₩'+v):
+                         _ST_METRIC==='imps'?(v>=1e8?(v/1e8).toFixed(1)+'억imps':v>=1e6?(v/1e6).toFixed(0)+'M imps':v):v+'건'
+        }, grid:{color:'rgba(255,255,255,0.06)'} }
+      }
+    }
+  });
+}
+
+function setStMetric(metric) {
+  _ST_METRIC = metric;
+  ['amt','imps','cnt'].forEach(m => {
+    const btn = document.getElementById(`st-metric-${m}`);
+    if(!btn) return;
+    btn.style.background = m===metric?'#1a1917':'';
+    btn.style.color      = m===metric?'#fff':'';
+  });
+  if(!_ST_ROWS.length) return;
+  const rows = _getStFiltered();
+  const months = [...new Set(rows.filter(r=>r.year&&r.month).map(r=>`${r.year}-${String(r.month).padStart(2,'0')}`))]
+    .sort();
+  const cats = [...new Set(rows.map(r=>r.bigCat))].sort();
+  const agg = {};
+  rows.forEach(r => {
+    if(!r.year||!r.month) return;
+    const mk = `${r.year}-${String(r.month).padStart(2,'0')}`;
+    if(!agg[mk]) agg[mk]={};
+    if(!agg[mk][r.bigCat]) agg[mk][r.bigCat]={amt:0,imps:0,cnt:0,newAdv:0};
+    agg[mk][r.bigCat].amt   +=r.amt;
+    agg[mk][r.bigCat].imps  +=r.imps;
+    agg[mk][r.bigCat].cnt   +=1;
+    agg[mk][r.bigCat].newAdv+=r.newAdv==='Y'?1:0;
+  });
+  const sv = document.getElementById('st-view-mode')?.value || 'bigCat';
+  _renderStChart(rows, months, cats, agg, sv);
+}
+
+function downloadSubTrendCSV() {
+  if(!_ST_ROWS.length) { alert('먼저 파일을 업로드해주세요.'); return; }
+  const rows = _getStFiltered();
+  const fW = n => Math.round(n);
+  const headers = ['연도','월','광고주','상품 대분류','상품 소분류','초수','유가여부','신규광고주','청약금액(원)','노출수','CPM'];
+  const csvRows = [headers.join(',')];
+  rows.forEach(r => {
+    csvRows.push([r.year,r.month,`"${r.adv}"`,`"${r.bigCat}"`,`"${r.smallCat}"`,r.sec,r.paid,r.newAdv,fW(r.amt),fW(r.imps),fW(r.cpm)].join(','));
+  });
+  const bom = '\uFEFF';
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const blob = new Blob([bom+csvRows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`청약트렌드_${ts}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
 </script>
-</body>
-</html>
