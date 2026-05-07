@@ -577,6 +577,7 @@ function loadSubTrendFile(input) {
       <button class="tab" onclick="go('kbo-summary',this)">KBO 분석 요약</button>
       <button class="tab" onclick="go('kbo-analysis',this)">KBO 분석 상세</button>
       <button class="tab" onclick="go('kbo-insight',this)">KBO 종합분석</button>
+      <button class="tab" onclick="go('imps-forecast',this)">📊 상품별 일별 보장 IMPS</button>
       <button class="tab" onclick="go('kbo-calc',this)">보너스 계산기</button>
       <button class="tab" onclick="go('kbo-alloc',this)">보너스율 배분 계산기</button>
       <button class="tab" onclick="go('sub-trend',this)">📊 청약 트렌드</button>
@@ -1552,6 +1553,64 @@ function loadSubTrendFile(input) {
   </div>
 </div>
 
+<!-- 상품별 일별 보장 IMPS 탭 -->
+<div id="sec-imps-forecast" class="sec">
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">📊 상품별 일별 보장 IMPS</div>
+        <div style="font-size:11px;color:var(--text3)">청약 세팅 파일(KBO 월별 시트)을 업로드하면 경기일 기준 일별 노출 부담을 상품별로 보여줘요</div>
+      </div>
+      <label class="btn btn-primary" style="cursor:pointer;font-size:12px">
+        📂 세팅 파일 업로드
+        <input type="file" accept=".xlsx,.xls" onchange="loadImpsForecastFile(this)" style="display:none">
+      </label>
+    </div>
+
+    <!-- 상품별 IMPS 설정 -->
+    <div id="imps-product-config" style="display:none;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">⚙️ 상품별 보장 IMPS 설정</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">기본값은 KBO 분석 상세의 상품 설정을 따라요. 다른 기준으로 운영할 경우 직접 수정하세요.</div>
+      <div id="imps-product-config-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary" onclick="renderImpsForecast()" style="font-size:11px">🔄 차트 업데이트</button>
+        <button class="btn" onclick="resetImpsProductConfig()" style="font-size:11px">↩ 기본값으로 초기화</button>
+        <button class="btn" onclick="downloadImpsForecastCSV()" style="font-size:11px">📥 CSV 다운로드</button>
+      </div>
+    </div>
+
+    <!-- 경기 없는 날 안내 -->
+    <div id="imps-exdays-info" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(37,99,235,0.06);border-radius:8px;border-left:3px solid var(--blue)">
+      <div style="font-size:11px;color:var(--text2)">
+        ℹ️ 경기 없는 날은 <strong>KBO 분석 상세 탭의 달력 설정</strong>을 따라요.
+        <span id="imps-exdays-count" style="color:var(--blue-text);font-weight:600"></span>
+      </div>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div id="imps-forecast-result">
+      <div class="empty" style="padding:2rem;text-align:center;font-size:12px">
+        세팅 파일을 업로드하면 상품별 일별 보장 IMPS가 표시됩니다<br>
+        <span style="color:var(--text3);font-size:11px">KBO_3-4월 / KBO_5월_기준 등의 시트가 포함된 파일을 사용해주세요</span>
+      </div>
+    </div>
+
+    <!-- 차트 -->
+    <div id="imps-chart-wrap" style="display:none;margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">일별 보장 IMPS 추이 (경기일 기준)</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--text3)">보기:</span>
+          <button id="imps-view-stack" onclick="setImpsChartView('stack')" class="btn" style="font-size:11px;background:#1a1917;color:#fff">누적 스택</button>
+          <button id="imps-view-line"  onclick="setImpsChartView('line')"  class="btn" style="font-size:11px">합계 라인</button>
+          <button id="imps-view-pct"   onclick="setImpsChartView('pct')"   class="btn" style="font-size:11px">비율(%)</button>
+        </div>
+      </div>
+      <div style="position:relative;height:320px"><canvas id="ch-imps-forecast"></canvas></div>
+    </div>
+  </div>
+</div>
+
 <!-- Slack -->
 <div id="sec-slk" class="sec">
   <div class="card">
@@ -1628,6 +1687,7 @@ function go(id,el){
   if(id==='kbo-alloc'){ _alLoad(); alCalc(); }
   if(id==='weekly'){ generateWeeklyReport(); renderPrevWeekCompare(); renderAlertHistory(); }
   // 개요 탭 돌아올 때 스크롤 복원, 다른 탭은 맨 위
+  if(id==='imps-forecast') renderImpsForecast();
   if(id==='ov') {
     requestAnimationFrame(() => window.scrollTo(0, _ovScrollY));
   } else {
@@ -2153,11 +2213,11 @@ const KBO_DEFAULT_PRODUCTS=[
   {tmpl:'[T ONLY] KBO_구단 타겟팅_NC_15초',             cost:30000000,   cpm:25000,  guaranteedImps:1200000},
   {tmpl:'[T ONLY] KBO_구단 타겟팅_두산_15초',            cost:30000000,   cpm:25000,  guaranteedImps:1200000},
   {tmpl:'[T ONLY] KBO_구단 타겟팅_기아_15초',            cost:30000000,   cpm:25000,  guaranteedImps:1200000},
-  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_1',              cost:200000000,  cpm:35000,  guaranteedImps:5714286},
-  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_2',              cost:140000000,  cpm:35000,  guaranteedImps:4000000},
-  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_3',              cost:60000000,   cpm:35000,  guaranteedImps:1714286},
-  {tmpl:'[T ONLY] KBO_1주 집중 PKG_15초',              cost:30000000,   cpm:25000,  guaranteedImps:1200000},
-  {tmpl:'[T ONLY] KBO_1주 집중 PKG_30초',              cost:60000000,   cpm:50000,  guaranteedImps:1200000},
+  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_1',              cost:250000000,  cpm:35000,  guaranteedImps:7142857},
+  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_2',              cost:170000000,  cpm:35000,  guaranteedImps:4857143},
+  {tmpl:'[T ONLY] OB맥주_주류_15초_4월_3',              cost:80000000,   cpm:35000,  guaranteedImps:2285714},
+  {tmpl:'[T ONLY] KBO_1주 집중 PKG_15초',              cost:30000000,   cpm:25000,  guaranteedImps:1440000},
+  {tmpl:'[T ONLY] KBO_1주 집중 PKG_30초',              cost:60000000,   cpm:50000,  guaranteedImps:1440000},
   {tmpl:'[T ONLY] KBO_노출 보장 PKG_제한 업종_15초',     cost:70000000,   cpm:40000,  guaranteedImps:1750000},
   {tmpl:'[T ONLY] KBO_노출 보장 PKG_제한 업종_15초_2',   cost:70000000,   cpm:40000,  guaranteedImps:1750000},
 ];
@@ -6503,6 +6563,569 @@ function downloadSubTrendCSV() {
   const blob = new Blob([bom+csvRows.join('\n')],{type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url; a.download=`청약트렌드_${ts}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<script>
+// ════════════════════════════════════════════════════════
+// 📊 상품별 일별 보장 IMPS 탭
+// ════════════════════════════════════════════════════════
+let _IF_ROWS = [];       // 파싱된 청약 행
+let _IF_CONFIG = {};     // 상품별 보장 IMPS 커스텀 설정 { tmplKey → imps }
+let _IF_CHART = null;
+let _IF_VIEW = 'stack';  // 'stack' | 'line'
+
+// 상품 → 기본 보장 IMPS 매핑 (KBO_DEFAULT_PRODUCTS 기준)
+// 30초는 2구좌여도 보장 IMPS는 15초와 동일 (상품 단위 보장)
+const IMPS_PRODUCT_MAP = {
+  '노출 보장 PKG':          5000000,
+  '노출 보장 PKG_제한업종':  1750000,
+  '1주 집중 임팩트 PKG':    1440000,
+  '팬덤 PKG':               1200000,
+  '퍼스트뷰 독점 PKG':      null,   // 퍼스트뷰는 IMPS 보장 없음
+  '7이닝 장조추 독점 PKG':  null,   // 7이닝도 별도
+  'JBP보너스_노출보장PKG':  null,   // 파싱 시 별도 처리
+  'JBP 보너스':             null,   // fixedImps로 처리됨
+  'OB맥주 KBO PKG':         null,   // 템플릿별 IMPS 자동 조회
+};
+
+function loadImpsForecastFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
+
+      // KBO_5월_기준 시트 우선, 없으면 유사 시트 탐색
+      const PREFERRED = 'KBO_5월_기준';
+      const fallback  = wb.SheetNames.find(n =>
+        n.includes('5월') && (n.includes('기준') || n.includes('KBO'))
+      ) || wb.SheetNames.find(n =>
+        n.startsWith('KBO_') && !n.includes('세팅') && !n.includes('시범경기')
+      );
+      const kboSheets = wb.SheetNames.includes(PREFERRED)
+        ? [PREFERRED]
+        : (fallback ? [fallback] : []);
+
+      if(!kboSheets.length) {
+        alert('KBO_5월_기준 시트를 찾을 수 없어요.\n시트 목록: ' + wb.SheetNames.join(', '));
+        return;
+      }
+
+      _IF_ROWS = [];
+      let sheetUsed = [];
+
+      kboSheets.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:false});
+
+        // 헤더 행 찾기 (KBO 상품, 구좌수, 초수, 시작일, 종료일 포함 행)
+        let hRow = -1, colMap = {};
+        for(let i=0; i<Math.min(5, arr.length); i++) {
+          const row = arr[i];
+          row.forEach((v, ci) => {
+            const s = String(v||'').trim();
+            if(s === 'KBO 상품')  colMap.kboProduct = ci;
+            if(s === '구좌수')     colMap.slots       = ci;
+            if(s === '초수')       colMap.sec         = ci;
+            if(s === '시작일')     colMap.startDate   = ci;
+            if(s === '종료일')     colMap.endDate     = ci;
+            if(s === '보너스')     colMap.bonus       = ci;
+            if(s === '상품템플릿') colMap.tmpl        = ci;
+          });
+          if(colMap.kboProduct !== undefined && colMap.startDate !== undefined) {
+            hRow = i; break;
+          }
+        }
+        if(hRow < 0) return;
+
+        const parseD = v => {
+          if(!v) return null;
+          if(v instanceof Date) return v;
+          const s = String(v);
+          const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+          if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+          // XLSX 날짜 시리얼
+          const n = parseFloat(s);
+          if(!isNaN(n) && n > 40000) {
+            const d = new Date(Math.round((n - 25569)*86400000));
+            return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+          }
+          return null;
+        };
+
+        let lastProd='', lastSlots=1, lastSec=15, lastStart=null, lastEnd=null;
+        for(let i=hRow+1; i<arr.length; i++) {
+          const row = arr[i];
+          if(!row) continue;
+          let prod     = String(row[colMap.kboProduct]||'').trim();
+          let slots    = parseFloat(row[colMap.slots]) || 0;
+          let sec      = parseFloat(row[colMap.sec])   || 0;
+          let startDate= parseD(row[colMap.startDate]);
+          let endDate  = parseD(row[colMap.endDate]);
+
+          // 상품명·날짜가 없으면 직전 유효 행에서 상속 (OB맥주처럼 템플릿만 다른 경우)
+          if(!prod || prod === '-') prod = lastProd;
+          if(!startDate) startDate = lastStart;
+          if(!endDate)   endDate   = lastEnd;
+          if(!slots)     slots     = lastSlots;
+          if(!sec)       sec       = lastSec;
+
+          if(!prod || !startDate || !endDate) continue;
+          if(prod === '-' || prod === '') continue;
+
+          // 유효 값 저장
+          if(String(row[colMap.kboProduct]||'').trim() && String(row[colMap.kboProduct]||'').trim() !== '-') {
+            lastProd = prod; lastSlots = slots || 1; lastSec = sec || 15;
+            lastStart = startDate; lastEnd = endDate;
+          }
+
+          // JBP 보너스: Q열(보너스금액)과 템플릿 CPM으로 IMPS 환산
+          if(prod.includes('JBP보너스') || prod.includes('(보너스)')) {
+            const bonusAmt = parseFloat(String(row[colMap.bonus]||'').replace(/,/g,'')) || 0;
+            const tmpl     = String(row[colMap.tmpl]||'').trim();
+            if(!bonusAmt || bonusAmt <= 0) continue; // Q열 없거나 0이면 제외
+
+            // JBP 보너스는 자신의 날짜만 사용 (상속 날짜 사용 안 함)
+            const rawStart = parseD(row[colMap.startDate]);
+            const rawEnd   = parseD(row[colMap.endDate]);
+            if(!rawStart || !rawEnd) continue; // 날짜 없는 JBP 행 제외
+
+            // 템플릿별 CPM 결정
+            let cpm = 14000; // 15초 기본
+            if(tmpl.includes('30초'))                       cpm = 28000;
+            if(tmpl.includes('제한 업종') && tmpl.includes('30초')) cpm = 80000;
+            if(tmpl.includes('제한 업종') && !tmpl.includes('30초')) cpm = 40000;
+
+            const bonusImps = Math.round(bonusAmt / cpm * 1000);
+            _IF_ROWS.push({
+              prod: 'JBP 보너스',
+              slots: 1, sec,
+              startDate: rawStart,
+              endDate:   rawEnd,
+              sheet: sheetName,
+              fixedImps: bonusImps
+            });
+            continue;
+          }
+
+          const tmpl = String(row[colMap.tmpl]||'').trim();
+          // OB맥주는 템플릿명 기준으로 별도 상품으로 묶기
+          const finalProd = tmpl.includes('OB맥주') ? 'OB맥주 KBO PKG' : prod;
+          _IF_ROWS.push({ prod: finalProd, slots, sec, startDate, endDate, sheet: sheetName, tmpl });
+        }
+        sheetUsed.push(sheetName);
+      });
+
+      console.log(`[IMPS Forecast] 파싱: ${_IF_ROWS.length}행, 시트: ${sheetUsed.join(', ')}`);
+      _buildImpsProductConfig();
+      renderImpsForecast();
+    } catch(err) {
+      alert('파일 읽기 오류: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function _buildImpsProductConfig() {
+  // 고유 상품 목록
+  const products = [...new Set(_IF_ROWS.map(r => r.prod))].sort();
+
+  // KBO 분석 상세 설정과 병합
+  const kboSettings = loadKBOSettings();
+  const kboProds = kboSettings.products || [];
+  const norm = s => s.replace(/\s+/g,' ').trim().toLowerCase();
+
+  // 기본 IMPS 결정
+  _IF_CONFIG = {};
+  products.forEach(prod => {
+    // 1. 이 상품에 속한 행들의 템플릿에서 KBO 분석 상세 설정 조회
+    const prodRows = _IF_ROWS.filter(r => r.prod === prod && r.tmpl);
+    if(prodRows.length) {
+      // 템플릿별로 보장 IMPS가 다를 수 있으므로 첫 번째 매칭 사용
+      for(const pr of prodRows) {
+        const kboProd = kboProds.find(p => p.tmpl && (
+          norm(p.tmpl) === norm(pr.tmpl) ||
+          norm(p.tmpl).includes(norm(pr.tmpl)) ||
+          norm(pr.tmpl).includes(norm(p.tmpl))
+        ));
+        if(kboProd?.guaranteedImps) {
+          _IF_CONFIG[prod] = kboProd.guaranteedImps;
+          return;
+        }
+      }
+    }
+    // 2. 상품명으로 KBO 분석 상세 설정 찾기
+    const kboProd = kboProds.find(p => p.tmpl && (
+      norm(p.tmpl).includes(norm(prod)) || norm(prod).includes(norm(p.tmpl.replace('[T ONLY]','').replace('[T ONLY_JBP]','')))
+    ));
+    if(kboProd?.guaranteedImps) {
+      _IF_CONFIG[prod] = kboProd.guaranteedImps;
+      return;
+    }
+    // 3. 기본 맵에서 찾기
+    const defaultImps = IMPS_PRODUCT_MAP[prod];
+    _IF_CONFIG[prod] = defaultImps || null;
+  });
+
+  // UI 렌더
+  const configEl = document.getElementById('imps-product-config');
+  const listEl   = document.getElementById('imps-product-config-list');
+  if(!configEl || !listEl) return;
+  configEl.style.display = 'block';
+
+  listEl.innerHTML = products.map(prod => {
+    const val = _IF_CONFIG[prod];
+    const isJBPBonus = prod === 'JBP 보너스';
+    const isExcluded = val === null && !isJBPBonus;
+    // JBP 보너스는 행별 고정 IMPS로 자동 계산 — 설정 불필요
+    if(isJBPBonus) return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:rgba(37,99,235,0.06);border-radius:6px;border-left:3px solid var(--blue)">
+      <div style="flex:1;font-size:12px;font-weight:600;color:var(--blue-text)">JBP 보너스</div>
+      <div style="font-size:11px;color:var(--text3)">보너스 금액 ÷ CPM × 1,000으로 자동 환산 (수정 불가)</div>
+    </div>`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;font-size:12px;font-weight:600;color:var(--text)">${prod}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="imps-inc-${prod.replace(/\s+/g,'_')}"
+          ${isExcluded?'':'checked'}
+          onchange="_onImpsIncludeChange('${prod.replace(/'/g,"\\'")}')"
+          style="cursor:pointer;accent-color:var(--blue)">
+        <label for="imps-inc-${prod.replace(/\s+/g,'_')}" style="font-size:11px;color:var(--text3)">포함</label>
+        <input type="number" id="imps-val-${prod.replace(/\s+/g,'_')}"
+          value="${isExcluded?'':val||''}"
+          placeholder="보장 IMPS"
+          ${isExcluded?'disabled':''}
+          oninput="_onImpsValChange('${prod.replace(/'/g,"\\'")}', this.value)"
+          style="width:130px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface);color:var(--text)">
+        <span style="font-size:10px;color:var(--text3)">imps/구좌</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _onImpsIncludeChange(prod) {
+  const key = prod.replace(/\s+/g,'_');
+  const cb  = document.getElementById(`imps-inc-${key}`);
+  const inp = document.getElementById(`imps-val-${key}`);
+  if(!cb || !inp) return;
+  if(cb.checked) {
+    inp.disabled = false;
+    _IF_CONFIG[prod] = parseFloat(inp.value) || IMPS_PRODUCT_MAP[prod] || 5000000;
+    inp.value = _IF_CONFIG[prod];
+  } else {
+    inp.disabled = true;
+    _IF_CONFIG[prod] = null;
+  }
+}
+
+function _onImpsValChange(prod, val) {
+  _IF_CONFIG[prod] = parseFloat(val) || null;
+  // 입력 변경 시 자동 반영 (디바운스)
+  clearTimeout(_IF_CONFIG._debounce);
+  _IF_CONFIG._debounce = setTimeout(renderImpsForecast, 400);
+}
+
+function resetImpsProductConfig() {
+  _buildImpsProductConfig();
+  renderImpsForecast();
+}
+
+function renderImpsForecast() {
+  const resultEl   = document.getElementById('imps-forecast-result');
+  const chartWrap  = document.getElementById('imps-chart-wrap');
+  const exdaysInfo = document.getElementById('imps-exdays-info');
+  if(!resultEl) return;
+
+  if(!_IF_ROWS.length) {
+    resultEl.innerHTML = '<div class="empty" style="padding:2rem;text-align:center;font-size:12px">세팅 파일을 업로드해주세요</div>';
+    if(chartWrap) chartWrap.style.display = 'none';
+    return;
+  }
+
+  // 경기 없는 날 (KBO 설정에서 가져오기)
+  const kboSettings = loadKBOSettings();
+  const excluded    = kboSettings.excluded || {};
+
+  // 날짜 범위
+  let minDate = null, maxDate = null;
+  _IF_ROWS.forEach(r => {
+    if(!_IF_CONFIG[r.prod] && _IF_CONFIG[r.prod] !== 0) return; // 제외 상품
+    if(!minDate || r.startDate < minDate) minDate = new Date(r.startDate);
+    if(!maxDate || r.endDate   > maxDate) maxDate = new Date(r.endDate);
+  });
+
+  if(!minDate) {
+    resultEl.innerHTML = '<div class="empty" style="padding:1rem;font-size:12px">포함된 상품이 없어요. 설정을 확인해주세요.</div>';
+    return;
+  }
+
+  // 경기일 목록 생성
+  const gameDays = [];
+  for(let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate()+1)) {
+    const yr = d.getFullYear(), mo = d.getMonth(), day = d.getDate(); // mo: 0-indexed
+    const exDays = getExDays(excluded, yr, mo);
+    if(!exDays.includes(day)) {
+      gameDays.push(new Date(d));
+    }
+  }
+
+  if(!gameDays.length) {
+    resultEl.innerHTML = '<div class="empty" style="padding:1rem;font-size:12px">경기일이 없어요. KBO 달력 설정을 확인해주세요.</div>';
+    return;
+  }
+
+  // 경기 없는 날 안내
+  const totalDays  = Math.round((maxDate - minDate) / 86400000) + 1;
+  const exDayTotal = totalDays - gameDays.length;
+  if(exdaysInfo) {
+    exdaysInfo.style.display = 'block';
+    const exdaysCountEl = document.getElementById('imps-exdays-count');
+    if(exdaysCountEl) exdaysCountEl.textContent =
+      `전체 ${totalDays}일 중 경기일 ${gameDays.length}일 / 제외일 ${exDayTotal}일`;
+    // 경기일이 예상과 다를 경우 KBO 달력 설정 안내
+    if(exDayTotal === 0) {
+      exdaysInfo.innerHTML += '<br><span style="color:var(--amber);font-size:10px">⚠️ 제외일이 0일이에요 — KBO 분석 상세 탭 달력에서 경기 없는 날을 설정해주세요</span>';
+    }
+  }
+
+  // 고유 상품 (포함된 것만) — JBP 보너스, OB맥주는 별도 처리
+  const products = [...new Set(_IF_ROWS.map(r=>r.prod))]
+    .filter(p => {
+      if(p === 'JBP 보너스') return true; // fixedImps로 처리
+      if(p === 'OB맥주 KBO PKG') return true; // 템플릿별 IMPS로 처리
+      return _IF_CONFIG[p] !== null && _IF_CONFIG[p] !== undefined;
+    })
+    .sort();
+
+  // 일별 × 상품별 IMPS 집계
+  // 각 행: 시작일~종료일 내 경기일 수 계산 → 일별 IMPS = 보장 IMPS ÷ 경기일 수
+  const dayMap = {}; // 'YYYY-MM-DD' → { product → imps }
+  const fmtKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  _IF_ROWS.forEach(r => {
+    // JBP 보너스는 fixedImps로 처리, 일반 상품은 IMPS 조회
+    const isJBPRow = r.fixedImps !== undefined;
+    let rowTotalImps;
+    if(isJBPRow) {
+      rowTotalImps = r.fixedImps;
+    } else {
+      rowTotalImps = null;
+      // 1. 사용자가 _IF_CONFIG에서 직접 수정한 값 우선 (OB맥주 제외 — 템플릿별 처리)
+      const userSet = _IF_CONFIG[r.prod];
+      if(r.prod !== 'OB맥주 KBO PKG' && userSet !== null && userSet !== undefined) {
+        rowTotalImps = userSet;
+      } else if(r.tmpl) {
+        // 2. 템플릿 기반 IMPS (OB맥주, 기타 템플릿별 상이 케이스)
+        const kboProdsNow = (loadKBOSettings().products||[]);
+        const norm2 = s => s.replace(/\s+/g,' ').trim().toLowerCase();
+        const matched = kboProdsNow.find(p => p.tmpl && (
+          norm2(p.tmpl) === norm2(r.tmpl) ||
+          norm2(r.tmpl).includes(norm2(p.tmpl))
+        ));
+        if(matched?.guaranteedImps) rowTotalImps = matched.guaranteedImps;
+      }
+      // 3. 최종 폴백
+      if(rowTotalImps === null) rowTotalImps = _IF_CONFIG[r.prod];
+    }
+    if(!rowTotalImps) return;
+
+    // 이 캠페인의 경기일 목록
+    const campGameDays = gameDays.filter(d => d >= r.startDate && d <= r.endDate);
+    if(!campGameDays.length) return;
+
+    // fixedImps: 보너스 금액에서 환산된 총 IMPS (경기일 균등 배분)
+    const dailyImps = rowTotalImps / campGameDays.length;
+
+    campGameDays.forEach(d => {
+      const dk = fmtKey(d);
+      if(!dayMap[dk]) dayMap[dk] = {};
+      dayMap[dk][r.prod] = (dayMap[dk][r.prod] || 0) + dailyImps;
+    });
+  });
+
+  const dateKeys = Object.keys(dayMap).sort();
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+
+  // ── 테이블 ──
+  const colW = Math.max(60, Math.floor(600 / Math.min(dateKeys.length, 31)));
+  let tbl = `<div style="overflow-x:auto;font-size:11px">
+  <table style="border-collapse:collapse;min-width:100%">
+  <thead><tr style="border-bottom:2px solid var(--border);background:var(--surface2)">
+    <th style="text-align:left;padding:6px 10px;white-space:nowrap;position:sticky;left:0;background:var(--surface2);z-index:2;min-width:160px;color:var(--text3);font-weight:600">KBO 상품</th>
+    ${dateKeys.map(dk=>`<th style="text-align:right;padding:5px 6px;white-space:nowrap;min-width:${colW}px;color:var(--text3);font-weight:600">${dk.slice(5)}</th>`).join('')}
+    <th style="text-align:right;padding:6px 10px;white-space:nowrap;color:var(--text3);font-weight:600;position:sticky;right:0;background:var(--surface2)">기간 합계</th>
+  </tr></thead><tbody>`;
+
+  const COLORS = ['#2563eb','#059669','#dc2626','#d97706','#7c3aed','#ec4899',
+                  '#0ea5e9','#f59e0b','#06b6d4','#ef4444','#10b981','#a855f7'];
+
+  products.forEach((prod, gi) => {
+    if(!dateKeys.some(dk=>(dayMap[dk]?.[prod]||0)>0)) return;
+    const color = COLORS[gi % COLORS.length];
+    const total = dateKeys.reduce((s,dk)=>s+(dayMap[dk]?.[prod]||0),0);
+    tbl += `<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:6px 10px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--surface)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:6px"></span>${prod}
+      </td>
+      ${dateKeys.map(dk=>{
+        const v=Math.round(dayMap[dk]?.[prod]||0);
+        return v>0?`<td style="padding:5px 6px;text-align:right">${fN(v)}</td>`
+                  :`<td style="padding:5px 6px;text-align:right;color:var(--text3)">—</td>`;
+      }).join('')}
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--blue-text);position:sticky;right:0;background:var(--surface)">${fN(Math.round(total))}</td>
+    </tr>`;
+  });
+
+  // 합계 행
+  const dailyTotals = dateKeys.map(dk => products.reduce((s,p)=>s+(dayMap[dk]?.[p]||0),0));
+  const grandTotal  = dailyTotals.reduce((s,v)=>s+v,0);
+  tbl += `<tr style="border-top:2px solid var(--border);background:var(--surface2);font-weight:700">
+    <td style="padding:6px 10px;position:sticky;left:0;background:var(--surface2)">합계 · 일 보장 IMPS</td>
+    ${dailyTotals.map(v=>`<td style="padding:5px 6px;text-align:right">${fN(Math.round(v))}</td>`).join('')}
+    <td style="padding:6px 10px;text-align:right;color:var(--blue-text);position:sticky;right:0;background:var(--surface2)">${fN(Math.round(grandTotal))}</td>
+  </tr></tbody></table></div>`;
+
+  resultEl.innerHTML = tbl;
+
+  // 차트
+  if(chartWrap) chartWrap.style.display = 'block';
+  _renderImpsChart(products, dateKeys, dayMap, dailyTotals, COLORS);
+}
+
+function _renderImpsChart(products, dateKeys, dayMap, dailyTotals, COLORS) {
+  const ctxEl = document.getElementById('ch-imps-forecast');
+  if(!ctxEl) return;
+  if(_IF_CHART) _IF_CHART.destroy();
+
+  const labels = dateKeys.map(dk => dk.slice(5));
+  const fN = n => Math.round(n).toLocaleString('ko-KR');
+
+  const isPct  = _IF_VIEW === 'pct';
+  const isLine = _IF_VIEW === 'line';
+  const isStack = !isLine;
+
+  let datasets;
+  if(isLine) {
+    datasets = [{
+      label: '전체 일 보장 IMPS',
+      data: dailyTotals.map(v=>Math.round(v)),
+      borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)',
+      fill: true, tension: 0.3, pointRadius: 3, type: 'line'
+    }];
+  } else {
+    const activeProds = products.filter(p => dateKeys.some(dk=>(dayMap[dk]?.[p]||0)>0));
+    datasets = activeProds.map((prod, gi) => ({
+      label: prod,
+      data: dateKeys.map((dk, di) => {
+        const raw = dayMap[dk]?.[prod] || 0;
+        if(isPct) {
+          const total = dailyTotals[di] || 1;
+          return +((raw / total) * 100).toFixed(2);
+        }
+        return Math.round(raw);
+      }),
+      backgroundColor: COLORS[gi%COLORS.length],
+      borderRadius: 2, stack: 'imps'
+    }));
+  }
+
+  const height = Math.max(280, Math.min(420, 200 + dateKeys.length * 8));
+  ctxEl.parentElement.style.height = height + 'px';
+
+  _IF_CHART = new Chart(ctxEl, {
+    type: isLine ? 'line' : 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: isLine?'top':'right',
+          labels:{color:'#8f8fa0', font:{size:10}, boxWidth:10, padding:8} },
+        tooltip: {
+          mode:'index', intersect:false,
+          callbacks: {
+            label: ctx => {
+              if(!ctx.raw) return null;
+              return isPct
+                ? `${ctx.dataset.label}: ${ctx.raw}%`
+                : `${ctx.dataset.label}: ${fN(ctx.raw)} imps`;
+            },
+            footer: items => {
+              const sum = items.reduce((s,i)=>s+(i.raw||0),0);
+              return isPct ? `합계: ${sum.toFixed(1)}%` : `합계: ${fN(Math.round(sum))} imps`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: isStack,
+             ticks:{color:'#5e5e6e',font:{size:9},maxRotation:45,maxTicksLimit:Math.min(dateKeys.length,31)},
+             grid:{color:'rgba(255,255,255,0.03)'},
+             categoryPercentage: dateKeys.length<=7?0.4:0.9, barPercentage:0.95 },
+        y: { stacked: isStack,
+             min: 0,
+             max: isPct ? 100 : undefined,
+             ticks:{color:'#5e5e6e',font:{size:10},
+               callback: v => isPct ? v.toFixed(0)+'%' :
+                 v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v},
+             grid:{color:'rgba(255,255,255,0.05)'} }
+      }
+    }
+  });
+}
+
+function setImpsChartView(view) {
+  _IF_VIEW = view;
+  ['stack','line','pct'].forEach(v => {
+    const btn = document.getElementById(`imps-view-${v}`);
+    if(!btn) return;
+    btn.style.background = v===view?'#1a1917':'';
+    btn.style.color      = v===view?'#fff':'';
+  });
+  renderImpsForecast();
+}
+
+function downloadImpsForecastCSV() {
+  if(!_IF_ROWS.length) { alert('먼저 파일을 업로드해주세요.'); return; }
+
+  const kboSettings = loadKBOSettings();
+  const excluded    = kboSettings.excluded || {};
+  let minDate=null, maxDate=null;
+  _IF_ROWS.forEach(r => {
+    if(!_IF_CONFIG[r.prod]) return;
+    if(!minDate||r.startDate<minDate) minDate=new Date(r.startDate);
+    if(!maxDate||r.endDate>maxDate)   maxDate=new Date(r.endDate);
+  });
+  if(!minDate) return;
+
+  const gameDays = [];
+  for(let d=new Date(minDate); d<=maxDate; d.setDate(d.getDate()+1)) {
+    const yr=d.getFullYear(), mo=d.getMonth(), day=d.getDate(); // mo: 0-indexed (getExDays 규약)
+    if(!getExDays(excluded,yr,mo).includes(day)) gameDays.push(new Date(d));
+  }
+  const fmtKey = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const dayMap={};
+  _IF_ROWS.forEach(r=>{
+    const perSlotImps = r.fixedImps || _IF_CONFIG[r.prod]; if(!perSlotImps) return;
+    const campGameDays=gameDays.filter(d=>d>=r.startDate&&d<=r.endDate);
+    if(!campGameDays.length) return;
+    const dailyImps=perSlotImps/campGameDays.length;
+    campGameDays.forEach(d=>{const dk=fmtKey(d);if(!dayMap[dk])dayMap[dk]={};dayMap[dk][r.prod]=(dayMap[dk][r.prod]||0)+dailyImps;});
+  });
+  const dateKeys=Object.keys(dayMap).sort();
+  const products=[...new Set(_IF_ROWS.map(r=>r.prod))].filter(p=>_IF_CONFIG[p]).sort();
+  const headers=['날짜','경기일여부',...products,'합계'];
+  const rows=[headers.join(',')];
+  dateKeys.forEach(dk=>{
+    const total=products.reduce((s,p)=>s+(dayMap[dk]?.[p]||0),0);
+    rows.push([dk,'경기일',...products.map(p=>Math.round(dayMap[dk]?.[p]||0)),Math.round(total)].join(','));
+  });
+  const bom='\uFEFF';
+  const ts=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const blob=new Blob([bom+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`상품별_일별보장IMPS_${ts}.csv`;a.click();
   URL.revokeObjectURL(url);
 }
 </script>
