@@ -50,6 +50,12 @@ function loadSubTrendFile(input) {
         const s = String(v);
         const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
         if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+        // XLSX 날짜 시리얼 (예: 45413 = 2024-05-15)
+        const n = parseFloat(s);
+        if(!isNaN(n) && n > 40000) {
+          const d = new Date(Math.round((n - 25569)*86400000));
+          return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        }
         return null;
       };
 
@@ -1569,12 +1575,17 @@ function loadSubTrendFile(input) {
 
     <!-- 상품별 IMPS 설정 -->
     <div id="imps-product-config" style="display:none;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">⚙️ 상품별 보장 IMPS 설정</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">기본값은 KBO 분석 상세의 상품 설정을 따라요. 다른 기준으로 운영할 경우 직접 수정하세요.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">⚙️ 상품별 보장 IMPS 설정</div>
+        <div id="imps-override-summary" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
+        기본값은 KBO 분석 상세의 상품 설정을 따라요. 직접 수정한 값(<span style="color:var(--amber, #d97706);font-weight:600">✎ 사용자 설정</span>)은 파일을 다시 올리거나 새로고침해도 유지돼요.
+      </div>
       <div id="imps-product-config-list" style="display:flex;flex-direction:column;gap:8px"></div>
-      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="renderImpsForecast()" style="font-size:11px">🔄 차트 업데이트</button>
-        <button class="btn" onclick="resetImpsProductConfig()" style="font-size:11px">↩ 기본값으로 초기화</button>
+        <button class="btn" onclick="resetImpsProductConfig()" style="font-size:11px">↩ 모두 자동값으로 초기화</button>
         <button class="btn" onclick="downloadImpsForecastCSV()" style="font-size:11px">📥 CSV 다운로드</button>
       </div>
     </div>
@@ -6571,9 +6582,35 @@ function downloadSubTrendCSV() {
 // 📊 상품별 일별 보장 IMPS 탭
 // ════════════════════════════════════════════════════════
 let _IF_ROWS = [];       // 파싱된 청약 행
-let _IF_CONFIG = {};     // 상품별 보장 IMPS 커스텀 설정 { tmplKey → imps }
+let _IF_CONFIG = {};     // 상품별 보장 IMPS 최종 적용값 { prod → imps | null }
 let _IF_CHART = null;
-let _IF_VIEW = 'stack';  // 'stack' | 'line'
+let _IF_VIEW = 'stack';  // 'stack' | 'line' | 'pct'
+
+// 사용자가 직접 수정한 값만 저장 (재업로드/새로고침 시에도 유지)
+// { prod → { value: number|null, excluded: boolean } }
+//   value: 수정한 IMPS 값 (excluded=true면 무시)
+//   excluded: true면 이 상품을 계산에서 제외
+let _IF_OVERRIDES = {};
+
+function _loadImpsOverrides() {
+  try {
+    const raw = localStorage.getItem('imps_forecast_overrides');
+    if(raw) {
+      const parsed = JSON.parse(raw);
+      // 객체여야 하고, 배열이면 안 됨
+      if(parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        _IF_OVERRIDES = parsed;
+      }
+    }
+  } catch(e) {}
+}
+
+function _saveImpsOverrides() {
+  try { localStorage.setItem('imps_forecast_overrides', JSON.stringify(_IF_OVERRIDES)); } catch(e) {}
+}
+
+// 첫 로드
+_loadImpsOverrides();
 
 // 상품 → 기본 보장 IMPS 매핑 (KBO_DEFAULT_PRODUCTS 기준)
 // 30초는 2구좌여도 보장 IMPS는 15초와 동일 (상품 단위 보장)
@@ -6693,10 +6730,14 @@ function loadImpsForecastFile(input) {
             if(!rawStart || !rawEnd) continue; // 날짜 없는 JBP 행 제외
 
             // 템플릿별 CPM 결정
-            let cpm = 14000; // 15초 기본
-            if(tmpl.includes('30초'))                       cpm = 28000;
-            if(tmpl.includes('제한 업종') && tmpl.includes('30초')) cpm = 80000;
-            if(tmpl.includes('제한 업종') && !tmpl.includes('30초')) cpm = 40000;
+            // (제한 업종 / 제한업종 두 표기 모두 지원, 30초 우선)
+            const isRestricted = tmpl.includes('제한 업종') || tmpl.includes('제한업종');
+            const is30sec      = tmpl.includes('30초');
+            let cpm;
+            if(isRestricted && is30sec)  cpm = 80000;
+            else if(isRestricted)        cpm = 40000;
+            else if(is30sec)             cpm = 28000;
+            else                         cpm = 14000;
 
             const bonusImps = Math.round(bonusAmt / cpm * 1000);
             _IF_ROWS.push({
@@ -6770,6 +6811,17 @@ function _buildImpsProductConfig() {
     _IF_CONFIG[prod] = defaultImps || null;
   });
 
+  // 4. 사용자가 직접 수정한 값(_IF_OVERRIDES)이 있으면 자동값 위에 덮어씌움
+  Object.keys(_IF_OVERRIDES).forEach(prod => {
+    if(!products.includes(prod)) return; // 이번 파일에 없는 상품은 건너뜀
+    const ov = _IF_OVERRIDES[prod];
+    if(ov.excluded) {
+      _IF_CONFIG[prod] = null;
+    } else if(ov.value !== null && ov.value !== undefined) {
+      _IF_CONFIG[prod] = ov.value;
+    }
+  });
+
   // UI 렌더
   const configEl = document.getElementById('imps-product-config');
   const listEl   = document.getElementById('imps-product-config-list');
@@ -6780,29 +6832,55 @@ function _buildImpsProductConfig() {
     const val = _IF_CONFIG[prod];
     const isJBPBonus = prod === 'JBP 보너스';
     const isExcluded = val === null && !isJBPBonus;
+    const hasOverride = !!_IF_OVERRIDES[prod];
+    const safeId = prod.replace(/\s+/g,'_');
+    const safeProd = prod.replace(/'/g,"\\'");
     // JBP 보너스는 행별 고정 IMPS로 자동 계산 — 설정 불필요
     if(isJBPBonus) return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:rgba(37,99,235,0.06);border-radius:6px;border-left:3px solid var(--blue)">
       <div style="flex:1;font-size:12px;font-weight:600;color:var(--blue-text)">JBP 보너스</div>
       <div style="font-size:11px;color:var(--text3)">보너스 금액 ÷ CPM × 1,000으로 자동 환산 (수정 불가)</div>
     </div>`;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px;font-size:12px;font-weight:600;color:var(--text)">${prod}</div>
+    // 사용자 수정값이 있으면 좌측 보더 + 뱃지로 표시
+    const borderStyle = hasOverride ? 'border-left:3px solid var(--amber, #d97706);' : '';
+    const overrideBadge = hasOverride
+      ? `<span style="font-size:10px;color:var(--amber, #d97706);background:rgba(217,119,6,0.1);padding:2px 6px;border-radius:4px;font-weight:600" title="사용자가 직접 수정한 값입니다 (재업로드/새로고침 시에도 유지)">✎ 사용자 설정</span>`
+      : '';
+    const resetBtn = hasOverride
+      ? `<button onclick="_resetImpsOverride('${safeProd}')" title="이 상품만 자동값으로 되돌리기" style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text3);cursor:pointer">↩</button>`
+      : '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;flex-wrap:wrap;${borderStyle}">
+      <div style="flex:1;min-width:200px;font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">
+        <span>${prod}</span>
+        ${overrideBadge}
+      </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="imps-inc-${prod.replace(/\s+/g,'_')}"
+        <input type="checkbox" id="imps-inc-${safeId}"
           ${isExcluded?'':'checked'}
-          onchange="_onImpsIncludeChange('${prod.replace(/'/g,"\\'")}')"
+          onchange="_onImpsIncludeChange('${safeProd}')"
           style="cursor:pointer;accent-color:var(--blue)">
-        <label for="imps-inc-${prod.replace(/\s+/g,'_')}" style="font-size:11px;color:var(--text3)">포함</label>
-        <input type="number" id="imps-val-${prod.replace(/\s+/g,'_')}"
+        <label for="imps-inc-${safeId}" style="font-size:11px;color:var(--text3)">포함</label>
+        <input type="number" id="imps-val-${safeId}"
           value="${isExcluded?'':val||''}"
           placeholder="보장 IMPS"
           ${isExcluded?'disabled':''}
-          oninput="_onImpsValChange('${prod.replace(/'/g,"\\'")}', this.value)"
+          oninput="_onImpsValChange('${safeProd}', this.value)"
           style="width:130px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface);color:var(--text)">
         <span style="font-size:10px;color:var(--text3)">imps/구좌</span>
+        ${resetBtn}
       </div>
     </div>`;
   }).join('');
+
+  // override 요약 표시
+  const summaryEl = document.getElementById('imps-override-summary');
+  if(summaryEl) {
+    const ovProds = Object.keys(_IF_OVERRIDES).filter(p => products.includes(p));
+    if(ovProds.length > 0) {
+      summaryEl.innerHTML = `<span style="color:var(--amber, #d97706);font-weight:600">✎ 사용자 설정 ${ovProds.length}개 적용 중</span>`;
+    } else {
+      summaryEl.innerHTML = '';
+    }
+  }
 }
 
 function _onImpsIncludeChange(prod) {
@@ -6812,22 +6890,54 @@ function _onImpsIncludeChange(prod) {
   if(!cb || !inp) return;
   if(cb.checked) {
     inp.disabled = false;
-    _IF_CONFIG[prod] = parseFloat(inp.value) || IMPS_PRODUCT_MAP[prod] || 5000000;
-    inp.value = _IF_CONFIG[prod];
+    const newVal = parseFloat(inp.value) || IMPS_PRODUCT_MAP[prod] || 5000000;
+    _IF_CONFIG[prod] = newVal;
+    inp.value = newVal;
+    // override 저장: 포함 + 값 명시
+    _IF_OVERRIDES[prod] = { value: newVal, excluded: false };
   } else {
     inp.disabled = true;
     _IF_CONFIG[prod] = null;
+    // override 저장: 제외
+    _IF_OVERRIDES[prod] = { value: null, excluded: true };
   }
+  _saveImpsOverrides();
+  // 행 UI 다시 그리기 (override 뱃지 표시)
+  _buildImpsProductConfig();
+  renderImpsForecast();
 }
 
 function _onImpsValChange(prod, val) {
-  _IF_CONFIG[prod] = parseFloat(val) || null;
-  // 입력 변경 시 자동 반영 (디바운스)
-  clearTimeout(_IF_CONFIG._debounce);
-  _IF_CONFIG._debounce = setTimeout(renderImpsForecast, 400);
+  const num = parseFloat(val);
+  _IF_CONFIG[prod] = isNaN(num) ? null : num;
+  // override 저장 (값이 비어있어도 사용자가 의도적으로 비운 것으로 보고 저장)
+  _IF_OVERRIDES[prod] = { value: isNaN(num) ? null : num, excluded: false };
+  _saveImpsOverrides();
+  // 입력 변경 시 자동 반영 (디바운스) — UI 재렌더는 입력 중 포커스 잃을 위험이 있어 차트만
+  clearTimeout(_IF_VAL_DEBOUNCE);
+  _IF_VAL_DEBOUNCE = setTimeout(() => {
+    renderImpsForecast();
+    // 첫 수정 시 뱃지가 안 보일 수 있으므로 한 번만 재렌더
+    _buildImpsProductConfig();
+  }, 500);
+}
+let _IF_VAL_DEBOUNCE = null;
+
+// 개별 상품의 사용자 설정만 제거 (자동값으로 되돌림)
+function _resetImpsOverride(prod) {
+  delete _IF_OVERRIDES[prod];
+  _saveImpsOverrides();
+  _buildImpsProductConfig();
+  renderImpsForecast();
 }
 
+// 모든 사용자 설정 제거 → 전부 자동값으로
 function resetImpsProductConfig() {
+  if(Object.keys(_IF_OVERRIDES).length > 0) {
+    if(!confirm('직접 수정하신 모든 상품의 보장 IMPS 값이 자동값으로 초기화돼요. 진행할까요?')) return;
+  }
+  _IF_OVERRIDES = {};
+  _saveImpsOverrides();
   _buildImpsProductConfig();
   renderImpsForecast();
 }
@@ -6904,6 +7014,10 @@ function renderImpsForecast() {
   const dayMap = {}; // 'YYYY-MM-DD' → { product → imps }
   const fmtKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
+  // 루프 밖에서 한 번만 조회 (성능)
+  const _kboProdsForRender = (loadKBOSettings().products || []);
+  const _normForRender = s => s.replace(/\s+/g,' ').trim().toLowerCase();
+
   _IF_ROWS.forEach(r => {
     // JBP 보너스는 fixedImps로 처리, 일반 상품은 IMPS 조회
     const isJBPRow = r.fixedImps !== undefined;
@@ -6918,11 +7032,9 @@ function renderImpsForecast() {
         rowTotalImps = userSet;
       } else if(r.tmpl) {
         // 2. 템플릿 기반 IMPS (OB맥주, 기타 템플릿별 상이 케이스)
-        const kboProdsNow = (loadKBOSettings().products||[]);
-        const norm2 = s => s.replace(/\s+/g,' ').trim().toLowerCase();
-        const matched = kboProdsNow.find(p => p.tmpl && (
-          norm2(p.tmpl) === norm2(r.tmpl) ||
-          norm2(r.tmpl).includes(norm2(p.tmpl))
+        const matched = _kboProdsForRender.find(p => p.tmpl && (
+          _normForRender(p.tmpl) === _normForRender(r.tmpl) ||
+          _normForRender(r.tmpl).includes(_normForRender(p.tmpl))
         ));
         if(matched?.guaranteedImps) rowTotalImps = matched.guaranteedImps;
       }
