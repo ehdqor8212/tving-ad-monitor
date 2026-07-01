@@ -31,18 +31,33 @@ function loadSubTrendFile(input) {
       const ws = wb.Sheets[sheetName];
       const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
 
-      const COL = { adv:13, amt:15, bigCat:17, smallCat:18, sec:21,
-                    startDate:24, endDate:25, paid:31, newAdv:33, cpm:34, imps:35 };
-
+      // 헤더 행 자동 탐지 (청약금액 + 시작일이 함께 있는 행)
       let headerRow = 0;
-      for(let i=0; i<Math.min(10, arr.length); i++) {
-        const row = arr[i];
-        if(String(row[COL.bigCat]||'').includes('대분류') ||
-           String(row[COL.paid]||'').includes('유가') ||
-           String(row[COL.amt]||'').includes('청약')) {
-          headerRow = i; break;
-        }
+      for(let i=0; i<Math.min(15, arr.length); i++) {
+        const j = (arr[i]||[]).map(x=>String(x||'')).join('|');
+        if(j.includes('청약금액') && j.includes('시작일')) { headerRow = i; break; }
       }
+
+      // 헤더 이름으로 열 위치 자동 매칭 (마스터 파일 열 순서가 바뀌어도 안전)
+      const _H = (arr[headerRow]||[]).map(x=>String(x||'').replace(/\s+/g,''));
+      const _findCol = (...names) => {
+        for(const nm of names){ const i=_H.findIndex(h=>h===nm); if(i>=0) return i; }
+        for(const nm of names){ const i=_H.findIndex(h=>h.includes(nm)); if(i>=0) return i; }
+        return -1;
+      };
+      const COL = {
+        adv:      _findCol('광고주'),
+        amt:      _findCol('청약금액'),
+        bigCat:   _findCol('상품_대분류','상품대분류','대분류'),
+        smallCat: _findCol('상품_소분류','상품소분류','소분류'),
+        sec:      _findCol('소재초수','초수'),
+        startDate:_findCol('시작일'),
+        endDate:  _findCol('종료일'),
+        paid:     _findCol('유가여부'),
+        newAdv:   _findCol('신규광고주'),
+        cpm:      _findCol('CPM'),
+        imps:     _findCol('총예상노출량','예상노출량','노출량')
+      };
 
       const parseRowDate = v => {
         if(!v) return null;
