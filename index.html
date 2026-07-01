@@ -48,7 +48,7 @@ function loadSubTrendFile(input) {
         if(!v) return null;
         if(v instanceof Date) return v;
         const s = String(v);
-        const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+        const m = s.match(/(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
         if(m) return new Date(+m[1], +m[2]-1, +m[3]);
         // XLSX 날짜 시리얼 (예: 45413 = 2024-05-15)
         const n = parseFloat(s);
@@ -6685,7 +6685,7 @@ function loadImpsForecastFile(input) {
           if(!v) return null;
           if(v instanceof Date) return v;
           const s = String(v);
-          const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+          const m = s.match(/(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
           if(m) return new Date(+m[1], +m[2]-1, +m[3]);
           // XLSX 날짜 시리얼
           const n = parseFloat(s);
