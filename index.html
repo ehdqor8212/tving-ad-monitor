@@ -2161,7 +2161,14 @@ function loadFromAppsScriptHost(){
     .getDashboardData();
   return true;
 }
-
+function refreshTasFromHost(btn){
+  if(!(window.google&&google.script&&google.script.run)){alert('웹앱 주소에서만 쓸 수 있어요');return;}
+  const label=btn.textContent; btn.disabled=true; btn.textContent='⏳ TAS 갱신 중…';
+  google.script.run
+    .withSuccessHandler(()=>{btn.disabled=false;btn.textContent=label;loadFromAppsScriptHost();})
+    .withFailureHandler(e=>{btn.disabled=false;btn.textContent=label;alert('TAS 갱신 실패: '+(e&&e.message?e.message:e));})
+    .refreshTasNow();
+}
 // 앱 시작 시 저장된 URL로 자동 로드
 (async()=>{
   if(loadFromAppsScriptHost()){ if(window.TAS_PAGE!=='inventory') setInterval(loadFromAppsScriptHost,10*60*1000); return; }
