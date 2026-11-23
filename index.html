@@ -542,6 +542,16 @@ function loadSubTrendFile(input) {
 .fc-verdict.warn{border-left-color:#d97706;background:var(--yellow-bg,#fffbeb)}
 .fc-verdict.bad{border-left-color:var(--red);background:var(--red-bg)}
 .fc-v-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.fc-story{font-size:14px;line-height:1.7;margin:10px 0 4px;color:var(--text)}
+.fc-facts{font-size:12px;line-height:1.8;color:var(--text2);margin-top:8px}
+.fc-tips{font-size:12px;line-height:1.8;margin-top:10px;padding:8px 12px;background:var(--surface);border:1px dashed var(--border2);border-radius:var(--radius)}
+.fc-gauge{margin:10px 0 2px;max-width:520px}
+.fc-gauge-bar{position:relative;display:flex;height:12px;border-radius:6px;overflow:visible}
+.fc-gauge-bar span{display:block;height:100%}
+.fc-gauge-bar span:first-child{border-radius:6px 0 0 6px}.fc-gauge-bar span:nth-child(3){border-radius:0 6px 6px 0}
+.fc-gauge-bar i{position:absolute;top:-4px;width:4px;height:20px;margin-left:-2px;background:#111827;border-radius:2px}
+.fc-gauge-lbl{position:relative;height:14px;font-size:10px;color:var(--text3)}
+.fc-gauge-lbl span{position:absolute;top:2px;transform:translateX(-50%)}.fc-gauge-lbl span:first-child{left:0;transform:none}.fc-gauge-lbl span:last-child{transform:none}
 .fc-v-sub{font-size:12px;color:var(--text2);line-height:1.8}
 
 .flt-wrap{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -695,6 +705,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
     <span class="slk-status off" id="slk-badge">● Slack 미연결</span>
     <span id="refresh-badge" style="display:none;font-size:11px;color:var(--green-text);background:var(--green-bg);border:1px solid var(--green-border);padding:3px 10px;border-radius:20px;align-items:center;gap:4px"></span>
     <button id="mode-btn" onclick="toggleMode()" class="btn" style="font-weight:600;min-width:90px">🌅 오전 모드</button>
+    <button class="btn" onclick="refreshTasFromHost(this)" style="font-weight:600">⚡ TAS 지금 갱신</button>
     <button class="btn" onclick="showSheetModal()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text);font-weight:600">📊 시트 불러오기</button>
     <label for="fi" class="btn btn-upload" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px">📂 XLSX 업로드</label>
     <button class="btn hide-mobile" onclick="loadSample()">샘플 데이터</button>
@@ -1605,12 +1616,13 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">📦 상품별 인벤토리 현황 — 보는 방법</summary>
       <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
         <div style="margin-bottom:10px"><b style="color:var(--text)">무엇을 보나요?</b> 지금 들어와 있는 청약(취소 제외)이 <b>하루에 얼마나 노출되어야 하는지</b>를 상품별로 합산해요. 청약 계획 기준이라, 앞으로의 인벤토리 수요를 미리 보는 용도예요.</div>
-        <div style="margin-bottom:10px"><b style="color:var(--text)">데이터</b> 운영마스터파일의 최신 분기 시트(예: 26.4Q)를 <b>매일 오전 10시·오후 4시</b>에 자동으로 다시 읽어요. 그 사이에도 <b>🔄 새로고침</b>을 누르면 바로 최신 값을 불러와요. 화면 위에 <b>시트 최종 수정 시각</b>과 <b>불러온 시각</b>이 나와요. 시트는 읽기만 해요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">데이터</b> 운영마스터파일의 최신 분기 시트(예: 26.4Q)를 <b>매일 오전 11시·오후 4시</b>에 자동으로 다시 읽어요(화면을 열어둔 경우). 그 사이에도 <b>🔄 새로고침</b>을 누르면 바로 최신 값을 불러와요. 화면 위에 <b>시트 최종 수정 시각</b>과 <b>불러온 시각</b>이 나와요. 시트는 읽기만 해요.</div>
         <div style="margin-bottom:6px"><b style="color:var(--text)">계산</b></div>
         <div style="border-left:3px solid var(--blue);padding:6px 12px;background:var(--surface2);border-radius:0 6px 6px 0;margin-bottom:10px">
           일 필요 노출 = <b>총 예상 노출량(AB열) ÷ 집행일수</b>(시작일~종료일, 양 끝 포함)<br>
           예) 10/1~10/27 (27일), 총 2,700,000 → 하루 100,000<br>
-          총 예상 노출량이 비어 있으면 청약금액 ÷ CPM × 1,000으로 계산해요 · 스플래시·아웃스트림(CPD)은 노출량이 없어 빠지는 게 정상이에요
+          총 예상 노출량이 비어 있으면 청약금액 ÷ CPM × 1,000으로 계산해요 · 스플래시·아웃스트림(CPD)은 노출량이 없어 빠지는 게 정상이에요<br>
+          <b>CPM도 비어 있으면</b> 같은 주문ID로 집행 중인 TAS 캠페인의 실제 과금단가로 채워서 계산해요(<b>TAS CPM으로 채워 보기</b>, 기본 켜짐). 표에 <span class="inv-tag y">TAS CPM</span> 표시가 붙고, 데이터 확인에 'CPM 입력 필요'로 남아요. 집행 전 주문은 TAS에 아직 없어서 채울 수 없어요
         </div>
         <div style="margin-bottom:6px"><b style="color:var(--text)">지표 두 가지</b></div>
         <div style="border-left:3px solid var(--amber);padding:6px 12px;background:var(--surface2);border-radius:0 6px 6px 0;margin-bottom:10px">
@@ -1626,10 +1638,12 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
           · <b>데이터 확인 필요</b>: CPM 누락·중복 의심·초수 미기재 등. 담당자가 시트를 고치면 다음 갱신 때 반영돼요<br>
           · <b>🎯 데모 타겟팅 쏠림</b>: MF2039 같은 성별·연령 타겟팅을 성별 × 5세 칸으로 쪼개서, 선택한 날 어느 칸에 캠페인이 몰렸는지 색으로 보여줘요. MF2039는 남·여 × 20~39세 8칸에 나눠 담아요(가용 노출 정보가 없어 똑같이 나눔). '겹치는 캠페인 수'로 바꾸면 칸마다 몇 건이 노리는지 보여요. 칸을 누르면 그 칸을 노리는 캠페인 목록이 나와요. 관심사·장르 같은 데모 외 타겟팅은 아래에 따로 모아요<br>
           · <b>보기 기준 → 세부 타겟팅</b>: 타겟팅 값별로 일 필요 노출을 쌓아봐요<br>
+          · <b>📊 계획 대비 실집행</b>: 같은 주문ID끼리 운영마스터 계획(하루 필요 × 어제까지 지난 일수)과 TAS 실제 노출(어제까지)을 비교해요. 부족한 순으로 정렬되고 90% 미만은 '부족'이에요. 주문 단위라 화면 필터와 상관없이 그 주문 전체를 비교해요<br>
+          · <b>비영상 하루 한도선</b>: 상세 필터로 이미지배너·일시정지만 골라 보면 그래프에 점선이 생겨요. TAS에서 실제로 나간 하루 최대 노출(소진 예측의 하루 한도와 같은 기준)이에요. 막대가 점선을 넘으면 그날 계획이 한도를 넘는다는 뜻이고, 표(상품 대분류 기준)에서도 넘는 날이 빨갛게 표시돼요<br>
           · <b>📥 엑셀 다운로드</b>: 그래프(이미지) · 일별 요약 · 캠페인별 · 데이터 확인 · 기준<br>
           · <b>카드 접기</b>: 각 카드 제목 왼쪽 ▾ 버튼(또는 제목)을 누르면 접히고, 위쪽 <b>⊟ 모두 접기 / ⊞ 모두 펼치기</b>로 한 번에 정리할 수 있어요. 접어둔 상태는 다음에 열어도 그대로예요 (나에게만 적용)
         </div>
-        <div><b style="color:var(--text)">제안 CPM 미리 반영</b> CPM이 빈 청약에 가이드 기준 단가를 화면에서만 넣어 계산해 봐요. 시트는 바뀌지 않아요.</div>
+        <div><b style="color:var(--text)">제안 CPM 미리 반영</b> CPM이 빈 청약에 가이드 기준 단가를 화면에서만 넣어 계산해 봐요(TAS CPM을 못 찾은 행만). 시트는 바뀌지 않아요.</div>
       </div>
     </details>
 
@@ -1643,7 +1657,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
         <div><b style="color:var(--text)">🎯 데모 타겟팅 쏠림 (성별 × 연령)</b> 두 탭 모두에 있어요. 상품별 탭은 청약 계획, 실소진 탭은 실소진을 반영한 남은 필요량(오늘~종료일)을 써요. 고른 <b>기간 전체</b>를 기준으로, 칸마다 <b>하루 평균 필요 노출</b>(기간 합 ÷ 기간 일수)을 보여줘요. 보는 방법이 세 가지예요.<br>
           · <b>균등 분배</b>: 캠페인 노출을 노리는 칸 수로 똑같이 나눠요. MF2039(8칸)는 칸마다 1/8. 칸을 다 더하면 전체와 같아서 <b>총량을 볼 때</b> 좋아요<br>
           · <b>겹침 포함 (최대)</b>: 캠페인 노출을 나누지 않고 노리는 칸마다 전부 더해요. 실제로는 한쪽 연령에 몰려 나갈 수 있으니, <b>그 칸에 최대 얼마까지 몰릴 수 있는지</b>(최악의 경우)를 볼 때 좋아요. 칸끼리 더하면 중복이라 합계로 쓰면 안 돼요<br>
-          · <b>실적 비율 예측</b>: 캠페인마다 지금까지 실제로 나간 성연령 비율(TAS 리포트)대로 나눠요. 실적이 적은 캠페인(타겟 칸 3만 노출 미만)은 같은 상품의 최근 30일 비율, 그것도 없으면 균등. 실적은 'TAS 성연령 실적' 시트 기준이고, 시트는 요청할 때 업데이트해요<br>
+          · <b>실적 비율 예측</b>: 캠페인마다 지금까지 실제로 나간 성연령 비율(TAS 리포트)대로 나눠요. 실적이 적은 캠페인(타겟 칸 3만 노출 미만)은 같은 상품의 최근 30일 비율, 그것도 없으면 균등. 실적은 'TAS 성연령 실적' 시트 기준이고, 시트는 <b>매일 오전 7시대에 TAS 리포트로 자동 갱신</b>돼요(캠페인 최근 60일 · 상품 최근 30일)<br>
           · <b>겹치는 캠페인 수</b>: 그 칸을 노리는 캠페인 개수<br>
           실제 노출은 연령별 시청자 비율에 따라 달라지기 때문에, 두 값 사이(균등 ~ 최대)에 실제가 있다고 보면 돼요.</div>
       </div>
@@ -1654,7 +1668,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">📈 실소진 기반 인벤토리 — 보는 방법</summary>
       <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
         <div style="margin-bottom:10px"><b style="color:var(--text)">무엇을 보나요?</b> 실제 소진이 밀리면 남은 날에 더 많이 내보내야 해요. 이 탭은 <b>지금까지 실제로 나간 노출</b>을 반영해서, 오늘부터 하루에 필요한 노출을 다시 계산해요. 운영마스터 기준(📦 탭)은 계획만 보기 때문에 이 이월분이 안 보여요.</div>
-        <div style="margin-bottom:10px"><b style="color:var(--text)">데이터</b> 캠페인 현황과 같은 [EXT] Campaign Dashboard(미러 시트)를 써요. 집행 중이거나 시작 예정인 캠페인만 계산해요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">데이터</b> 캠페인 정보(기간·총예산·CPM·일예산)는 [EXT] Campaign Dashboard(미러 시트), <b>집행 노출·금액은 TAS 리포트 실시간 값</b>이에요. TAS 값은 매일 10시대·15시대에 자동으로 갱신되고, 화면 위 <b>⚡ TAS 지금 갱신</b>을 누르면 바로 다시 받아와요(10~20초). 화면 위 기준 시각에 'TAS 시각 (캠페인 정보 시각)'이 함께 나와요. 집행 중이거나 시작 예정인 캠페인만 계산해요.</div>
         <div style="margin-bottom:6px"><b style="color:var(--text)">계산</b></div>
         <div style="border-left:3px solid var(--blue);padding:6px 12px;background:var(--surface2);border-radius:0 6px 6px 0;margin-bottom:10px">
           목표 노출 = 총예산 ÷ CPM × 1,000 (🎯 목표 지정이 있으면 그 값)<br>
@@ -1697,6 +1711,8 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
         <div style="margin-bottom:10px"><b style="color:var(--text)">각 항목 설명</b> 판정 결과 아래 <b>📖 각 항목 설명</b>을 펼치면 카드 · 표 열마다 계산식과 의미가 나와요.</div>
         <div style="margin-bottom:10px"><b style="color:var(--text)">유사 사례</b> 캠페인 현황에서 같은 상품 · 겹치는 성연령 캠페인이 실제로 하루 얼마나 나갔는지, 페이스가 밀렸는지(달성 갭)를 함께 보여줘요. 입력할 때마다 다시 찾아요.</div>
         <div><b style="color:var(--text)">한계</b> 최근 60일 수급이 기간 중에도 비슷하다는 가정이에요. 시청데모 · Prime time처럼 특정 프로그램에 붙는 상품은 공급이 크게 잡힐 수 있어요. 확정 전에는 TAS 예약형 주문 화면의 avails도 확인해 주세요.</div>
+              <div style="margin-top:10px"><b style="color:var(--text)">📈 실제 하루 집행 추이 · 📚 지난 1년 사례</b> 결과 아래에 그 상품이 최근 1년 동안 실제로 하루에 나간 노출(TAS) 막대와 이번 기간 필요선(점선)을 보여줘요. 점선이 평소 막대보다 훨씬 높으면 지금까지 낸 적 없는 양이에요. 끝난 캠페인까지 포함한 TAS 1년치 유사 사례도 함께 나와요 (매일 오전 7시대 자동 갱신).</div>
+
       </div>
     </details>
 
@@ -1916,6 +1932,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       </select>
       <label class="inv-check"><input type="checkbox" id="inv-nonvideo" checked onchange="INV.incNonVideo=this.checked;invRender()"> 비영상(이미지배너·일시정지 등) 포함</label>
       <label class="inv-check" title="AA열(CPM)이 빈 행에 가이드 기준 제안 CPM을 화면에서만 적용해요. 시트는 바뀌지 않아요."><input type="checkbox" id="inv-proposal" onchange="invToggleProposals(this.checked)"> 제안 CPM 미리 반영 <span class="inv-hint">(승인 전 확인용 · 시트 수정 없음)</span></label>
+      <label class="inv-check" title="CPM이 빈 청약을 같은 주문ID로 집행 중인 TAS 캠페인의 실제 과금단가로 채워서 계산해요. 화면에서만 적용되고 시트는 바뀌지 않아요."><input type="checkbox" id="inv-tascpm" checked onchange="invToggleTasCpm(this.checked)"> TAS CPM으로 채워 보기 <span class="inv-hint">(같은 주문ID의 실제 과금단가 · 시트 수정 없음)</span></label>
     </div>
   </div>
 
@@ -1962,6 +1979,15 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
   <div class="card" data-fold="inv-drill">
     <div class="card-title" id="inv-drill-title">선택한 날짜의 집행 캠페인</div>
     <div class="tbl-wrap inv-tbl-wrap" id="inv-drill"></div>
+  </div>
+
+  <div class="card" data-fold="inv-pva">
+    <div class="inv-top" style="margin-bottom:6px">
+      <div class="card-title" id="inv-pva-title" style="margin-bottom:0">📊 계획 대비 실집행 (주문별 · 어제까지)</div>
+      <span class="inv-hint">운영마스터파일 계획 노출 vs TAS 실제 노출 · 같은 주문ID끼리 비교해요</span>
+    </div>
+    <div class="inv-hint" id="inv-pva-sum" style="margin-bottom:8px"></div>
+    <div class="tbl-wrap inv-tbl-wrap" id="inv-pva"></div>
   </div>
 
   <div class="card" id="inv-issues-card">
@@ -2185,12 +2211,22 @@ function loadFromAppsScriptHost(){
       ST.fetchedAt=d.fetchedAt||new Date().toISOString();
       document.getElementById('topdate').textContent=(d.lastUpdated||'시트')+' 기준 · 자동 연동';
       processAll();
+      // 캠페인 현황(과금단가)이 들어오면 상품별 인벤토리의 'TAS CPM 채워 보기'를 다시 계산
+      if(typeof INV!=='undefined'&&INV.raw&&INV.loaded) invIngest(INV.raw,INV.meta);
     })
     .withFailureHandler(e=>showFileError('시트 연동 실패: '+(e&&e.message?e.message:e)))
     .getDashboardData();
   return true;
 }
 
+function refreshTasFromHost(btn){
+  if(!(window.google&&google.script&&google.script.run)){alert('웹앱 주소에서만 쓸 수 있어요');return;}
+  const label=btn.textContent; btn.disabled=true; btn.textContent='⏳ TAS 갱신 중…';
+  google.script.run
+    .withSuccessHandler(()=>{btn.disabled=false;btn.textContent=label;loadFromAppsScriptHost();})
+    .withFailureHandler(e=>{btn.disabled=false;btn.textContent=label;alert('TAS 갱신 실패: '+(e&&e.message?e.message:e));})
+    .refreshTasNow();
+}
 // 앱 시작 시 저장된 URL로 자동 로드
 (async()=>{
   if(loadFromAppsScriptHost()){ if(window.TAS_PAGE!=='inventory') setInterval(loadFromAppsScriptHost,10*60*1000); return; }
@@ -7182,7 +7218,7 @@ const INV = {
   dim: 'big', metric: 'imps', from: null, to: null, sel: null,
   statusOn: {}, paid: 'all', incNonVideo: true,
   chart: null, timer: null, agg: null, colorMap: {},
-  useProposals: false, raw: null,
+  useProposals: false, useTasCpm: true, raw: null,
   rangeMode: 'around', prefsApplied: false, demoMode: 'split', demoCell: null,
   flt: { big: [], sec: [], tgt: [], demo: [], paid: [] },
 };
@@ -7552,6 +7588,13 @@ function invParse(arr) {
 
     let imps = invNum(g(C.imps)) || 0;
     o.cpmSource = 'sheet';
+    // CPM이 빈 청약: 같은 주문ID의 TAS 캠페인 CPM(과금단가)으로 채워 보기 (화면에서만 · 시트 수정 없음)
+    const tasCpm = !o.cpm && !imps && o.order ? invTasCpm(o) : null;
+    o.tasCpm = tasCpm;
+    if (tasCpm && tasCpm.cpm && INV.useTasCpm && o.amt > 0) {
+      imps = o.amt / tasCpm.cpm * 1000; o.cpmSource = 'tas';
+      flag('tascpm', `TAS 캠페인 CPM ${invN(tasCpm.cpm)}으로 채움 → 총 ${invN(imps)} imps (${tasCpm.why}) · 시트에도 CPM을 넣어 주세요`);
+    }
     const prop = !o.cpm && !imps ? invFindProposal(o) : null;
     if (prop && INV.useProposals && o.amt > 0) {
       imps = o.amt / prop.cpm * 1000; o.cpmSource = 'proposal';
@@ -7562,7 +7605,9 @@ function invParse(arr) {
     if (!imps) {
       if (isCPD) flag('cpd', 'CPD 상품 — 노출량 없음');
       else if (!o.cpm) flag('cpm', 'CPM 없음 — 노출량을 계산할 수 없어 집계에서 빠져요' +
-        (prop && o.amt > 0 ? ` · 제안 CPM ${invN(prop.cpm)} 적용 시 총 ${invN(o.amt / prop.cpm * 1000)} imps (${prop.why})` : ' · 제안 CPM 없음 (상품 확인 필요)'));
+        (tasCpm && tasCpm.cpm && o.amt > 0 ? ` · TAS 캠페인 CPM ${invN(tasCpm.cpm)} (${tasCpm.why}) — 'TAS CPM으로 채워 보기'를 켜면 반영돼요` : '') +
+        (tasCpm && !tasCpm.cpm ? ` · TAS 확인: ${tasCpm.why}` : '') +
+        (prop && o.amt > 0 ? ` · 제안 CPM ${invN(prop.cpm)} 적용 시 총 ${invN(o.amt / prop.cpm * 1000)} imps (${prop.why})` : (tasCpm && tasCpm.cpm ? '' : ' · 제안 CPM 없음 (상품 확인 필요)')));
       else flag('zero', '청약금액 0 — 노출량 0');
     }
     if (o.start === null || o.end === null) flag('date', '시작일 또는 종료일 없음');
@@ -7663,6 +7708,7 @@ async function invOnShow() {
   await shareLoad();
   invApplyPrefs();
   foldInit('sec-inventory');
+  if (!DACT.loaded && !DACT.err) dactLoad();   // TAS 이력 (CPM 확인 · 계획 대비 실집행 · 비영상 한도선)
   if (!INV.loaded) invLoad(false); else invRender();
   if (!INV.timer && invHasLive()) { INV.timer = true; tasSlotStart(); }   // 매일 10:00·16:00 자동 갱신 (아래 ⏰ 참고)
 }
@@ -7671,7 +7717,7 @@ async function invOnShow() {
 function invApplyPrefs() {
   if (INV.prefsApplied) return; INV.prefsApplied = true;
   const p = SHARE.prefs.inv; if (!p) return;
-  ['dim', 'metric', 'paid', 'incNonVideo', 'useProposals', 'demoMode'].forEach(k => { if (p[k] !== undefined) INV[k] = p[k]; });
+  ['dim', 'metric', 'paid', 'incNonVideo', 'useProposals', 'useTasCpm', 'demoMode'].forEach(k => { if (p[k] !== undefined) INV[k] = p[k]; });
   if (!INV_DIMS[INV.dim]) INV.dim = 'big';
   if (p.statusOn) Object.assign(INV.statusOn, p.statusOn);
   if (p.flt) INV.flt = fltNorm(p.flt);
@@ -7681,7 +7727,7 @@ function invApplyPrefs() {
 function invSavePrefs() {
   sharePrefs('inv', {
     dim: INV.dim, metric: INV.metric, paid: INV.paid, incNonVideo: INV.incNonVideo,
-    useProposals: INV.useProposals, statusOn: INV.statusOn, rangeMode: INV.rangeMode, demoMode: INV.demoMode, flt: INV.flt,
+    useProposals: INV.useProposals, useTasCpm: INV.useTasCpm, statusOn: INV.statusOn, rangeMode: INV.rangeMode, demoMode: INV.demoMode, flt: INV.flt,
     from: INV.rangeMode === 'custom' ? invISO(INV.from) : null, to: INV.rangeMode === 'custom' ? invISO(INV.to) : null,
   });
 }
@@ -7708,6 +7754,10 @@ function invToggleProposals(on) {
   INV.useProposals = on;
   if (INV.raw) invIngest(INV.raw, INV.meta);
 }
+function invToggleTasCpm(on) {
+  INV.useTasCpm = on;
+  if (INV.raw) invIngest(INV.raw, INV.meta);
+}
 function invToggleStatus(s, on) { INV.statusOn[s] = on; invRender(); }
 function invSelect(d) { INV.sel = d; invRenderKPI(INV.agg); invRenderTable(INV.agg); invRenderDemo(); invRenderDrill(); }
 function invSetRange() {
@@ -7722,8 +7772,13 @@ function invFiltered() {
     r.ovr !== 'exclude' &&
     INV.statusOn[r.status] !== false &&
     (INV.paid === 'all' || r.paid === INV.paid) &&
-    (INV.incNonVideo || r.sec !== '비영상') &&
+    (INV.incNonVideo || r.sec !== '비영상' || invNvPicked(r)) &&
     fltPass(INV.flt, r));
+}
+// 상세 필터에서 이미지배너·일시정지 같은 비영상 상품(또는 초수 '비영상')을 직접 고르면, '비영상 포함'이 꺼져 있어도 보여줘요
+function invNvPicked(r) {
+  const f = INV.flt || {};
+  return (f.big && f.big.includes(r.big)) || (f.sec && f.sec.includes('비영상'));
 }
 function invColor(k) {
   if (INV_CFG.FIXED[k]) return INV_CFG.FIXED[k];
@@ -7789,8 +7844,68 @@ function invRender() {
   if (INV.sel === null || INV.sel < INV.from || INV.sel > INV.to) {
     const t = invToday(); INV.sel = t >= INV.from && t <= INV.to ? t : INV.from;
   }
-  invRenderKPI(agg); invRenderChart(agg); invRenderTable(agg); invRenderDemo(); invRenderDrill(); invRenderIssues();
+  invRenderKPI(agg); invRenderChart(agg); invRenderTable(agg); invRenderDemo(); invRenderDrill(); invRenderPva(); invRenderIssues();
   invSavePrefs();
+}
+
+// ── 📊 계획 대비 실집행 (주문별) ──
+//   계획: 운영마스터파일에서 같은 주문ID 행들의 하루 필요 노출 × 어제까지 지난 일수 (필터와 상관없이 주문 전체)
+//   실집행: TAS 주문별 어제까지 실제 노출 (주문_실집행 탭)
+//   화면 필터에 걸린 행이 하나라도 있는 주문만 보여줘요
+function invRenderPva() {
+  const el = document.getElementById('inv-pva'), sumEl = document.getElementById('inv-pva-sum');
+  if (!el) return;
+  if (!DACT.loaded) { el.innerHTML = '<div class="empty" style="padding:1rem">TAS 이력을 불러오는 중이에요…</div>'; sumEl.textContent = ''; return; }
+  if (!Object.keys(DACT.ord).length) { el.innerHTML = '<div class="empty" style="padding:1rem">TAS 주문 실집행 데이터가 아직 없어요 — Apps Script에서 refreshTasHistory를 한 번 실행해 주세요</div>'; sumEl.textContent = ''; return; }
+  const t = invToday(), yd = t - 1;
+  const shown = new Set(invFiltered().filter(r => r.order).map(r => r.order));
+  const by = {};
+  INV.rows.forEach(r => {
+    if (!r.order || !shown.has(r.order) || r.ovr === 'exclude') return;
+    const o = by[r.order] || (by[r.order] = { order: r.order, adv: r.adv, brand: r.brand, start: r.start, end: r.end, plan: 0, planY: 0, noImps: 0, rows: 0, bigs: new Set() });
+    o.rows++; o.bigs.add(r.big);
+    if (r.start !== null && (o.start === null || r.start < o.start)) o.start = r.start;
+    if (r.end !== null && (o.end === null || r.end > o.end)) o.end = r.end;
+    if (!r.daily) { o.noImps++; return; }
+    o.plan += r.imps;
+    const el2 = Math.min(r.end, yd) - r.start + 1;
+    if (el2 > 0) o.planY += r.daily * el2;
+  });
+  const list = Object.values(by).filter(o => o.planY > 0).map(o => {
+    const a = DACT.ord[o.order];
+    o.act = a ? a.imps : 0; o.found = !!a; o.ratio = o.planY ? o.act / o.planY : null; o.gap = o.act - o.planY;
+    return o;
+  }).sort((a, b) => a.gap - b.gap);
+  if (!list.length) { el.innerHTML = '<div class="empty" style="padding:1rem">이 필터에서 어제까지 집행됐어야 할 주문이 없어요</div>'; sumEl.textContent = ''; return; }
+  const P = list.reduce((s, o) => s + o.planY, 0), A = list.reduce((s, o) => s + o.act, 0);
+  const behind = list.filter(o => o.ratio !== null && o.ratio < 0.9).length, miss = list.filter(o => !o.found).length;
+  sumEl.innerHTML = `주문 ${list.length}개 · 어제까지 계획 <b>${invN(P)}</b> vs 실집행 <b>${invN(A)}</b> (<b style="color:${A / P < 0.9 ? 'var(--red)' : 'var(--text)'}">${(A / P * 100).toFixed(1)}%</b>)` +
+    ` · 90% 미만 <b style="color:var(--red)">${behind}개</b>${miss ? ` · TAS에서 못 찾은 주문 ${miss}개` : ''} · 부족한 순으로 정렬`;
+  const badge = o => !o.found ? '<span class="inv-tag">TAS 없음</span>' : o.ratio >= 1 ? '<span class="inv-tag n">달성</span>' : o.ratio >= 0.9 ? '<span class="inv-tag pre">조금 부족</span>' : '<span class="inv-tag" style="background:var(--red-bg);color:var(--red-text)">부족</span>';
+  let h = `<table class="inv-table"><thead><tr><th class="inv-stick">광고주 · 브랜드</th><th style="text-align:left">상품</th><th>기간</th>
+    <th title="운영마스터파일 총 예상 노출 합계">계획 총 노출</th><th title="하루 필요 노출 × 어제까지 지난 일수">어제까지 계획</th><th title="TAS 리포트 · 같은 주문ID · 어제까지">어제까지 실집행</th>
+    <th>실집행 ÷ 계획</th><th>차이</th><th>판정</th><th style="text-align:left">주문ID</th></tr></thead><tbody>`;
+  list.slice(0, 60).forEach(o => {
+    h += `<tr><td class="inv-stick" title="${invEsc(o.adv + ' · ' + o.brand)}">${invEsc(o.adv)} <span style="color:var(--text3)">· ${invEsc(o.brand)}</span></td>
+      <td style="color:var(--text2)">${invEsc([...o.bigs].join(', '))}</td>
+      <td class="num">${o.start !== null ? invMD(o.start) : '?'}~${o.end !== null ? invMD(o.end) : '?'}</td>
+      <td class="num">${invN(o.plan)}${o.noImps ? ` <span class="inv-hint" title="CPM 누락 등으로 계획 노출을 모르는 행">+${o.noImps}행 미상</span>` : ''}</td>
+      <td class="num">${invN(o.planY)}</td><td class="num b">${o.found ? invN(o.act) : '—'}</td>
+      <td class="num" style="color:${o.ratio !== null && o.ratio < 0.9 ? 'var(--red)' : 'inherit'}">${o.found ? (o.ratio * 100).toFixed(1) + '%' : '—'}</td>
+      <td class="num" style="color:${o.gap < 0 ? 'var(--red)' : 'var(--green-text)'}">${o.found ? (o.gap >= 0 ? '+' : '−') + invN(Math.abs(o.gap)) : '—'}</td>
+      <td>${badge(o)}</td><td style="color:var(--text3);font-size:10px">${invEsc(o.order)}</td></tr>`;
+  });
+  h += '</tbody></table>' + (list.length > 60 ? `<div class="inv-hint" style="margin-top:6px">부족한 순 60개만 보여줘요 (전체 ${list.length}개)</div>` : '');
+  el.innerHTML = h;
+}
+
+// ── 비영상 하루 한도 (TAS 실집행 상위 10%) — 그래프 한도선 · 표 넘침 표시용 ──
+//   그래프에 나온 상품이 이미지배너 · 일시정지뿐일 때만 한도선을 그려요 (영상과 쌓여 있으면 비교가 안 맞아서)
+function invNvCaps() {
+  if (!DACT.loaded || INV.metric !== 'imps') return [];
+  const bigs = new Set(invFiltered().filter(r => r.daily && r.start <= INV.to && r.end >= INV.from).map(r => r.big));
+  if (!bigs.size || [...bigs].some(b => !NV_PRODUCTS.includes(b))) return [];
+  return [...bigs].filter(b => DACT.nv[b] && DACT.nv[b].max).map(b => ({ prod: b, ...DACT.nv[b] }));
 }
 
 function invRenderMeta() {
@@ -7802,6 +7917,9 @@ function invRenderMeta() {
     ` · 시트 최종 수정 <b>${invTime(m.sheetUpdated)}</b> · 불러온 시각 <b>${invTime(m.fetchedAt)}</b>${next}<br>` +
     `<span style="color:var(--text3)">취소 제외 ${INV.rows.length}건 중 노출량 집계 ${counted}건 · 🔒 운영마스터파일은 읽기만 해요 (수정 권한 없음)</span>` +
     (INV.useProposals ? ` · <span style="color:var(--yellow-text)">제안 CPM 미리 반영 중 (시트 값 아님)</span>` : '') +
+    (() => { const n = INV.rows.filter(r => r.cpmSource === 'tas').length;
+      return n ? ` · <span style="color:var(--blue-text)">CPM 빈 ${n}건을 TAS 캠페인 CPM으로 채워서 계산 중 (시트 값 아님)</span>` : ''; })() +
+    (DACT.loaded && DACT.hist.length ? ` · TAS 이력 ${invEsc(String((DACT.pd && DACT.pd.at) || ''))} 기준` : '') +
     invExclNote();
   const b = document.getElementById('inv-excl-btn');
   if (b) b.textContent = ovrBtnText('inv');
@@ -7830,7 +7948,7 @@ function invRenderControls() {
   const p = document.getElementById('inv-paid'); if (p) p.value = INV.paid;
   fltRender('inv');
   const set = (id, k, v) => { const e = document.getElementById(id); if (e) e[k] = v; };
-  set('inv-nonvideo', 'checked', INV.incNonVideo); set('inv-proposal', 'checked', INV.useProposals);
+  set('inv-nonvideo', 'checked', INV.incNonVideo); set('inv-proposal', 'checked', INV.useProposals); set('inv-tascpm', 'checked', INV.useTasCpm);
   document.querySelectorAll('#sec-inventory .inv-chip[data-range]').forEach(b => b.classList.toggle('on', b.dataset.range === INV.rangeMode));
 }
 
@@ -7876,6 +7994,13 @@ function invRenderChart(agg) {
     type: 'line', label: `기간 평균 ${invShort(agg.avg)}`, data: agg.days.map(() => Math.round(agg.avg)),
     borderColor: 'rgba(100,116,139,.85)', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, stack: 'avg', order: -1,
   });
+  // 비영상 하루 한도선 (TAS 실집행 상위 10% 하루 노출)
+  const caps = invNvCaps();
+  caps.forEach((c, i) => datasets.push({
+    type: 'line', label: `${c.prod} 하루 한도 ${invShort(c.max)} (실제 최대 일 노출 · 소진 예측과 같은 기준)`, data: agg.days.map(() => Math.round(c.max)),
+    borderColor: ['#dc2626', '#9333ea'][i % 2], borderDash: [2, 3], borderWidth: 2, pointRadius: 0, stack: 'cap' + i, order: -2, capInfo: c,
+  }));
+  if (title && caps.length) title.textContent += ' · 점선 = 하루 한도';
   INV.chart = new Chart(el, {
     type: 'bar',
     data: { labels, datasets },
@@ -7886,14 +8011,19 @@ function invRenderChart(agg) {
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 10, padding: 10, font: { size: 11 }, color: '#6b7280' } },
         tooltip: {
-          filter: i => i.dataset.stack !== 'avg' && i.raw > 0,
+          filter: i => i.dataset.stack !== 'avg' && !String(i.dataset.stack).startsWith('cap') && i.raw > 0,
           itemSort: (a, b) => b.raw - a.raw,
           callbacks: {
             label: c => `${c.dataset.label}: ${invN(c.raw)}`,
             footer: items => {
               const s = items.reduce((a, i) => a + (i.raw || 0), 0);
               const dv = agg.avg ? (s - agg.avg) / agg.avg * 100 : 0;
-              return `합계 ${invN(s)} (평균 대비 ${dv >= 0 ? '+' : ''}${dv.toFixed(0)}%)`;
+              const lines = [`합계 ${invN(s)} (평균 대비 ${dv >= 0 ? '+' : ''}${dv.toFixed(0)}%)`];
+              caps.forEach(c => {
+                const v = agg.map[c.prod] ? agg.map[c.prod][items[0].dataIndex] : 0;
+                if (v) lines.push(`${c.prod}: 한도 ${invShort(c.max)}의 ${(v / c.max * 100).toFixed(0)}%${v > c.max ? ' ⚠️ 넘침' : ''} (상위 10% ${invShort(c.p90)} · 최근 30일 평균 ${invShort(c.avg30)})`);
+              });
+              return lines;
             },
           },
         },
@@ -7928,10 +8058,12 @@ function invRenderTable(agg) {
   const t = invToday(), n = agg.days.length;
   const thDate = d => `<th class="inv-date${d === t ? ' inv-today' : ''}${invWeekend(d) ? ' inv-wkend' : ''}${d === INV.sel ? ' inv-selcol' : ''}" onclick="invSelect(${d})">${invMD(d)}<br><span>${invDOW(d)}</span></th>`;
   let h = `<table class="inv-table"><thead><tr><th class="inv-stick">${INV_DIMS[INV.dim].label}</th>${agg.days.map(thDate).join('')}<th>기간 합계</th><th>일평균</th></tr></thead><tbody>`;
+  // 상품 대분류로 볼 때 이미지배너 · 일시정지가 하루 한도(TAS 실집행 상위 10%)를 넘는 날은 빨갛게
+  const capOf = k => INV.dim === 'big' && INV.metric === 'imps' && NV_PRODUCTS.includes(k) && DACT.loaded && DACT.nv[k] ? DACT.nv[k].max : 0;
   agg.keys.forEach(k => {
-    const arr = agg.map[k], sum = arr.reduce((s, v) => s + v, 0);
-    h += `<tr><td class="inv-stick" title="${invEsc(k)}"><span class="inv-dot" style="background:${invColor(k)}"></span>${invEsc(k)}</td>` +
-      arr.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}">${v ? invN(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
+    const arr = agg.map[k], sum = arr.reduce((s, v) => s + v, 0), cap = capOf(k);
+    h += `<tr><td class="inv-stick" title="${invEsc(k)}${cap ? ` · 하루 한도 ${invN(cap)}` : ''}"><span class="inv-dot" style="background:${invColor(k)}"></span>${invEsc(k)}${cap ? ` <span class="inv-hint">한도 ${invShort(cap)}</span>` : ''}</td>` +
+      arr.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}"${cap && v > cap ? ` style="background:rgba(220,38,38,.18);color:var(--red-text);font-weight:700" title="하루 한도 ${invN(cap)} 넘음"` : ''}>${v ? invN(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
       `<td class="num b">${invN(sum)}</td><td class="num">${invN(sum / n)}</td></tr>`;
   });
   const total = agg.tot.reduce((s, v) => s + v, 0);
@@ -7965,7 +8097,75 @@ function invPickDemoCell(k) { INV.demoCell = INV.demoCell === k ? null : k; invR
 // ════════════════════════════════════════════════════════
 // 📊 성연령 실적 (TAS 리포트 → 'TAS 성연령 실적' 시트) — 실적 비율 예측에 써요
 // ════════════════════════════════════════════════════════
-const DACT = { camp: {}, prod: {}, nv: {}, loaded: false, loading: null, err: '', at: '', range: '' };
+const DACT = { camp: {}, prod: {}, nv: {}, pd: null, hist: [], histByOrder: {}, histById: {}, ord: {}, loaded: false, loading: null, err: '', at: '', range: '' };
+const NV_PRODUCTS = ['이미지배너', '일시정지'];   // 하루 한도(TAS 실집행 기준)를 쓰는 비영상 상품
+
+// ── TAS 이력 탭 읽기 (tas_history.gs 가 매일 채워요) ──
+// 비영상_일노출: '상품 · 집계 시작 · …' 헤더 아래 상품별 하루 한도
+function dactParseNV(values) {
+  const out = {}; if (!values || !values.length) return out;
+  const h = values.findIndex(r => String(r[0] || '').trim() === '상품' && String(r[1] || '').trim() === '집계 시작');
+  if (h < 0) return out;
+  for (let i = h + 1; i < values.length; i++) {
+    const r = values[i] || [], name = String(r[0] || '').trim();
+    if (!name) break;
+    out[name] = { from: String(r[1] || ''), to: String(r[2] || ''), days: Number(r[3]) || 0, max: Number(r[4]) || 0,
+      maxDay: String(r[5] || ''), p90: Number(r[6]) || 0, avg30: Number(r[7]) || 0, at: String(r[8] || '') };
+  }
+  return out;
+}
+// 상품_일별: 날짜 × 상품 하루 실제 노출
+function dactParsePD(values) {
+  if (!values || values.length < 2) return null;
+  const H = values[0].map(v => String(v || '').trim());
+  const prods = H.slice(1).filter(h => h && h !== '수집 시각');
+  const by = {}; prods.forEach(p => { by[p] = {}; });
+  const dates = [];
+  values.slice(1).forEach(r => {
+    const d = String(r[0] || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    dates.push(d); prods.forEach((p, i) => { by[p][d] = Number(r[i + 1]) || 0; });
+  });
+  return { dates, prods, by, at: String((values[1] || [])[H.indexOf('수집 시각')] || '') };
+}
+// 상품 하루 실제 노출 통계 (최근 n일 · 노출 있는 날 기준)
+function dactProdStats(prod, n) {
+  const P = DACT.pd; if (!P || !P.by[prod]) return null;
+  const vals = P.dates.slice(-n).map(d => P.by[prod][d] || 0).filter(v => v > 0);
+  if (!vals.length) return null;
+  const s = [...vals].sort((a, b) => b - a);
+  return { avg: vals.reduce((a, v) => a + v, 0) / vals.length, max: s[0], p90: s[Math.max(0, Math.ceil(s.length * 0.1) - 1)], days: vals.length };
+}
+function dactParseRows(values) {
+  if (!values || values.length < 2) return [];
+  const H = values[0].map(v => String(v || '').trim());
+  return values.slice(1).filter(r => r && r[0]).map(r => Object.fromEntries(H.map((h, i) => [h, r[i]])));
+}
+
+// ── CPM이 빈 운영마스터 행 → 같은 주문ID의 TAS 캠페인 중 상품·초수·유무가가 가장 비슷한 캠페인의 과금단가 ──
+//   주문ID ↔ 캠페인: TAS 이력(캠페인_이력) · 과금단가: 캠페인 현황(미러 시트)
+//   집행이 시작되지 않은 주문은 TAS에 아직 없어서 찾을 수 없어요
+function invTasCpm(o) {
+  if (!DACT.loaded) return null;
+  const camps = DACT.histByOrder[o.order];
+  if (!camps || !camps.length) return { cpm: 0, why: '이 주문ID로 집행된 TAS 캠페인이 아직 없어요 (집행 시작 전일 수 있어요)' };
+  const st = {}; (ST.rows || []).forEach(r => { if (r.id) st[r.id] = r; });
+  const cand = camps.map(c => ({ id: c.id, tmpl: c.tmpl, cpm: st[c.id] && st[c.id].cpx ? st[c.id].cpx : 0 })).filter(c => c.cpm > 0);
+  if (!cand.length) return { cpm: 0, why: `주문 캠페인 ${camps.length}개를 찾았지만 캠페인 현황에 과금단가가 없어요` };
+  const want = paceCat(`${o.big} ${o.small}`), bonus = o.paid === '무가(보너스)', dm = invDemo(o.target);
+  cand.forEach(c => {
+    const dm2 = invDemo(c.tmpl);
+    c.score = (paceCat(c.tmpl) === want ? 4 : 0) + (paceSec(c.tmpl) === o.sec ? 2 : 0) +
+      (/보너스/.test(c.tmpl) === bonus ? 1 : 0) + (dm && dm2 && dm.code === dm2.code ? 1 : 0);
+  });
+  const best = Math.max(...cand.map(c => c.score));
+  const tops = cand.filter(c => c.score === best);
+  const cpms = [...new Set(tops.map(c => c.cpm))];
+  const short = t => String(t || '').replace(/^\[[^\]]*\]\s*/, '');
+  if (cpms.length === 1 && (best >= 4 || [...new Set(cand.map(c => c.cpm))].length === 1))
+    return { cpm: cpms[0], why: `같은 주문의 '${short(tops[0].tmpl)}' 캠페인 과금단가` };
+  return { cpm: 0, why: `같은 주문에 CPM이 다른 캠페인이 있어 하나로 정할 수 없어요 (${[...new Set(cand.map(c => invN(c.cpm)))].join(' / ')})` };
+}
+
 // 비영상_일노출 탭 요약 표(상품 | 집계 시작 | 집계 끝 | 집행일수 | 최대 일 노출 | 최대일 | 상위 10% | 최근 30일 평균 | 수집 시각)
 function nvParse(values) {
   const out = {}; if (!values || !values.length) return out;
@@ -7997,7 +8197,23 @@ function dactLoad(force) {
     if (!(window.google && google.script && google.script.run)) { DACT.err = 'Apps Script 웹앱에서만 불러올 수 있어요'; return res(); }
     google.script.run.withSuccessHandler(d => {
       DACT.camp = dactParse(d && d.campaign); DACT.prod = dactParse(d && d.product); DACT.nv = nvParse(d && d.nonvideo);
+      DACT.pd = dactParsePD(d && d.prodDaily);
+      DACT.hist = dactParseRows(d && d.history).map(x => ({
+        id: String(x['캠페인 ID'] || ''), tmpl: String(x['템플릿'] || ''), name: String(x['캠페인명'] || ''), prod: String(x['상품'] || ''),
+        order: String(x['주문 ID'] || ''), first: String(x['첫 집행일'] || ''), last: String(x['마지막 집행일'] || ''),
+        days: Number(x['집행일수']) || 0, imps: Number(x['총 노출']) || 0, spend: Number(x['총 집행금액']) || 0,
+        avg: Number(x['하루 평균 노출']) || 0, max: Number(x['최대 하루 노출']) || 0 }));
+      DACT.histByOrder = {}; DACT.histById = {};
+      DACT.hist.forEach(c => { DACT.histById[c.id] = c; if (c.order) (DACT.histByOrder[c.order] || (DACT.histByOrder[c.order] = [])).push(c); });
+      DACT.ord = {};
+      dactParseRows(d && d.orders).forEach(x => {
+        DACT.ord[String(x['주문 ID'])] = { title: String(x['주문명'] || ''), first: String(x['첫 집행일'] || ''), last: String(x['마지막 집행일(어제까지)'] || ''),
+          imps: Number(x['어제까지 노출']) || 0, spend: Number(x['어제까지 집행금액']) || 0, today: Number(x['오늘 노출(조회 시점)']) || 0,
+          camps: Number(x['캠페인 수']) || 0, at: String(x['수집 시각'] || '') };
+      });
       DACT.loaded = true; DACT.err = '';
+      if (INV.raw && INV.loaded) invIngest(INV.raw, INV.meta);   // TAS CPM · 계획 대비 실집행 · 한도선 반영
+      if (document.getElementById('sec-forecast')?.classList.contains('on')) { fcRenderMeta(); if (FC.last) fcRun(); }
       const any = Object.values(DACT.camp)[0] || Object.values(DACT.prod)[0];
       DACT.at = any ? String(any.at || '') : '';
       res();
@@ -8485,6 +8701,19 @@ function fcRun() {
       gap: r.impRate !== null && r.periodRate !== null ? r.impRate - r.periodRate : null });
   });
   sim.sort((a, b) => b.s - a.s || Math.abs((a.budget || 0) - sc.budget) - Math.abs((b.budget || 0) - sc.budget));
+  // ③-a TAS 최근 1년 실집행 (TAS 이력 탭) — 이미 끝난 캠페인까지 포함해 유사 사례를 넓혀요
+  const simH = [];
+  if (DACT.loaded && DACT.hist && DACT.hist.length) {
+    const seenId = new Set((ST.rows || []).map(r => r.id));
+    DACT.hist.forEach(c => {
+      if (c.prod !== sc.prod || c.days < 3 || seenId.has(c.id)) return;
+      const dm2 = invDemo(`${c.tmpl} ${c.name}`);
+      const s = sc.dm && dm2 ? (dm2.code === sc.dm.code ? 3 : dm2.cells.some(k => sc.dm.cells.includes(k)) ? 2 : 0) : (!sc.dm && !dm2 ? 2 : 1);
+      if (!s) return;
+      simH.push({ s, name: c.name || c.tmpl, tmpl: c.tmpl, code: dm2 ? dm2.code : '타겟팅 없음', per: `${c.first.slice(2).replace(/-/g, '/')}~${c.last.slice(5).replace('-', '/')}`, days: c.days, avg: c.avg, max: c.max });
+    });
+    simH.sort((a, b) => b.s - a.s || Math.abs(Math.log((a.avg || 1) / needDay)) - Math.abs(Math.log((b.avg || 1) / needDay)));
+  }
 
   // ③-b TOP20 실제 소진 체크 ('TOP20 일자별 소진 필요량' 시트): 이 기간 부킹 하루 최대 + 신규 vs 지금까지 하루 최대 실제 노출
   let tc = null;
@@ -8541,6 +8770,13 @@ function fcRun() {
       sim.slice(0, 10).map(x => `<tr><td>${invEsc(x.name)}</td><td style="color:var(--text3)">${invEsc(x.tmpl)}</td><td>${invEsc(x.code)}</td><td class="num">${x.per}</td><td class="num">${x.budget ? invW(x.budget) : '—'}</td><td class="num b">${invN(x.avg)}</td><td class="num" style="color:${x.gap !== null && x.gap <= -5 ? 'var(--red)' : 'inherit'}">${x.gap === null ? '—' : (x.gap > 0 ? '+' : '') + x.gap.toFixed(1) + '%p'}</td></tr>`).join('') +
       '</tbody></table></div><div class="inv-hint" style="margin-top:6px">하루 평균 실집행 = 지금까지 집행 노출 ÷ 지난 일수 · 달성 갭 = 노출달성율 − 기간달성율 (−5%p 이하면 페이스 미달)</div>'
       : '<div class="inv-hint">비슷한 집행 사례가 아직 없어요</div>') + '</div>';
+  if (simH.length) h += `<div class="card"><div class="card-title">📚 비슷한 지난 캠페인 — TAS 최근 1년 실집행 (끝난 캠페인 포함)</div>` +
+    `<div class="tbl-wrap"><table class="inv-table"><thead><tr><th style="text-align:left">캠페인</th><th style="text-align:left">템플릿</th><th style="text-align:left">타겟</th><th>기간</th><th>집행일수</th><th>하루 평균 실집행</th><th>최대 하루</th></tr></thead><tbody>` +
+    simH.slice(0, 10).map(x => `<tr><td>${invEsc(x.name)}</td><td style="color:var(--text3)">${invEsc(x.tmpl)}</td><td>${invEsc(x.code)}</td><td class="num">${x.per}</td><td class="num">${x.days}일</td><td class="num b" style="color:${x.avg >= needDay ? 'var(--green-text)' : 'inherit'}">${invN(x.avg)}</td><td class="num">${invN(x.max)}</td></tr>`).join('') +
+    `</tbody></table></div><div class="inv-hint" style="margin-top:6px">초록 숫자 = 이번 하루 필요(${invN(needDay)})보다 많이 낸 캠페인 · 타겟이 같은 순, 하루 필요량이 비슷한 순</div></div>`;
+  if (DACT.loaded && DACT.pd && DACT.pd.by[sc.prod]) h += `<div class="card"><div class="card-title">📈 ${invEsc(sc.prod)} 실제 하루 집행 추이 (TAS · 최근 1년)</div>
+      <div class="inv-hint" style="margin-bottom:6px">막대 = 그날 실제로 나간 노출 · 주황 점선 = 이번 기간에 필요한 하루 노출 (기존 수요 + 신규)${nv ? ' · 빨간 점선 = 하루 한도' : ''} · 점선이 평소 막대보다 훨씬 높으면 지금까지 낸 적 없는 양이에요</div>
+      <div style="position:relative;height:220px"><canvas id="ch-fc-hist"></canvas></div></div>`;
   h += `<div class="card"><div class="card-title">📐 계산 방법과 전제</div><div class="inv-hint" style="line-height:1.9">
     · <b>하루 가용</b> = 타겟 조건(구좌 Non-KBO · 플랫폼 · ${sc.top20 ? 'Top20 지면 · ' : ''}성별 · 연령)에 맞는 최근 60일 빈 슬롯 합 × 보정계수 ÷ 60일 — TVING Inventory 🎛 Simulator · 🧮 조합 계산기와 같은 계산이에요. 빈 슬롯만 세고 하우스 자리는 빼서 보수적이에요<br>
     · 성연령 타겟은 해당 성연령 수신 동의 유저에게만 나가서 가용의 <b>50%</b>만 타겟 가능으로 봐요<br>
@@ -8549,6 +8785,27 @@ function fcRun() {
     · 시청데모 · Prime time처럼 특정 프로그램에 붙는 상품은 공급을 Non-KBO 전체로 보기 때문에 실제보다 크게 잡힐 수 있어요<br>
     · 이미지배너 · 일시정지는 TVING Inventory 시트에 빈 자리 데이터가 없어서, 'TAS 성연령 실적' 시트 <b>비영상_일노출</b> 탭의 실제 최대 일 노출을 하루 한도로 보고 (기존 수요 + 신규) ÷ 한도로 판정해요 (80% 이하 진행 · 100% 이하 검토 · 초과 어려움). 스플래시 · 아웃스트림은 일 단위 판매라 판정하지 않아요</div></div>`;
   out.innerHTML = h;
+  fcDrawHist(sc, sc.nonVid ? needDay : needSlot, demandDay, from, to, nv ? nv.cap : 0);
+}
+
+// 📈 상품 실제 하루 집행 추이 (TAS 이력 · 상품_일별) + 이번 기간 필요선
+function fcDrawHist(sc, needD, demandDay, from, to, cap) {
+  const el = document.getElementById('ch-fc-hist'); if (!el || typeof Chart === 'undefined' || !DACT.pd) return;
+  if (FC.chart) FC.chart.destroy();
+  const P = DACT.pd, by = P.by[sc.prod] || {};
+  const last = P.dates.length ? invToDay(P.dates[P.dates.length - 1]) : invToday();
+  const start = Math.max(P.dates.length ? invToDay(P.dates[0]) : last, last - 364), end = Math.max(to, last);
+  const days = []; for (let d = start; d <= end; d++) days.push(d);
+  const ds = [
+    { type: 'bar', label: '실제 하루 노출 (TAS)', data: days.map(d => { const v = by[invISO(d)]; return v === undefined ? null : v; }), backgroundColor: 'rgba(37,99,235,.55)', barPercentage: 1, categoryPercentage: 1 },
+    { type: 'line', label: '이번 기간 필요 (기존 수요 + 신규)', data: days.map(d => d >= from && d <= to ? Math.round(demandDay + needD) : null), borderColor: '#d97706', borderDash: [6, 4], borderWidth: 2, pointRadius: 0 },
+  ];
+  if (cap) ds.push({ type: 'line', label: `하루 한도 ${invShort(cap)}`, data: days.map(() => cap), borderColor: '#dc2626', borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0 });
+  FC.chart = new Chart(el, { type: 'bar', data: { labels: days.map(d => invISO(d).slice(2)), datasets: ds },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 }, color: '#6b7280' } }, tooltip: { filter: i => i.raw !== null, callbacks: { label: c => `${c.dataset.label}: ${invN(c.raw)}` } } },
+      scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 }, color: '#6b7280' }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 }, color: '#6b7280', callback: v => invShort(v) }, grid: { color: 'rgba(0,0,0,.05)' } } } } });
 }
 
 function invRenderDrill() {
@@ -8570,7 +8827,7 @@ function invRenderDrill() {
     const s = r.daily * invWeight(r.sec); sumI += r.daily; sumS += s;
     h += `<tr><td class="inv-stick" title="${invEsc(r.adv + ' · ' + r.brand)}">${invEsc(r.adv)} <span style="color:var(--text3)">· ${invEsc(r.brand)}</span></td>
       <td>${invEsc(r.big)}</td><td style="color:var(--text2)">${invEsc(r.small)}</td><td style="color:var(--text3)">${invEsc(r.target)}</td>
-      <td class="num">${invEsc(r.sec)}</td><td>${tag(r)}${r.cpmSource === 'proposal' ? ' <span class="inv-tag pre" title="시트 CPM이 비어 있어 제안 CPM으로 계산">제안CPM</span>' : ''}${r.ovr === 'target' ? ' <span class="inv-tag pre" title="내가 목표 노출을 지정함 (나에게만 적용)">🎯내 목표</span>' : ''}</td><td>${st(r)}</td>
+      <td class="num">${invEsc(r.sec)}</td><td>${tag(r)}${r.cpmSource === 'proposal' ? ' <span class="inv-tag pre" title="시트 CPM이 비어 있어 제안 CPM으로 계산">제안CPM</span>' : ''}${r.cpmSource === 'tas' ? ` <span class="inv-tag y" title="시트 CPM이 비어 있어 같은 주문의 TAS 캠페인 CPM ${invN(r.tasCpm.cpm)}으로 계산">TAS CPM</span>` : ''}${r.ovr === 'target' ? ' <span class="inv-tag pre" title="내가 목표 노출을 지정함 (나에게만 적용)">🎯내 목표</span>' : ''}</td><td>${st(r)}</td>
       <td class="num">${invMD(r.start)}~${invMD(r.end)} <span style="color:var(--text3)">(${r.days}일)</span></td>
       <td class="num">${invN(r.imps)}</td><td class="num b">${invN(r.daily)}</td><td class="num">${invN(s)}</td>
       <td class="num" style="color:var(--text3)">${r.rowNo}</td>
@@ -8589,6 +8846,7 @@ function invRenderIssues() {
     ['dup', '중복 의심 (모든 값이 같은 행)', 'wn'],
     ['sec', '논스킵인데 소재 초수 미기재', 'wn'],
     ['mismatch', '대분류·소분류 상품 유형 불일치', 'wn'],
+    ['tascpm', 'CPM 빈칸 → TAS 캠페인 CPM으로 채워서 계산 중 (시트에 CPM 입력 필요)', 'wn'],
     ['proposal', '제안 CPM 미리 반영 중 (시트 수정 없음)', 'gr'],
     ['calc', '총 예상 노출량 빈칸 → 자동 계산함', 'gr'],
     ['cpd', 'CPD 상품 — 스플래시·아웃스트림은 일 단위 판매라 노출량 집계에서 빠지는 게 정상 (참고)', 'gr'],
@@ -9136,7 +9394,7 @@ document.addEventListener('click', e => document.querySelectorAll('.flt-dd[open]
 //   - 페이지를 열 때와 🔄 새로고침을 누를 때는 언제든 바로 최신 값을 불러와요
 //   - 열어둔 채로 정해진 시각이 지나면 1분 안에 자동으로 다시 불러와요 (노트북이 잠들었다 깨도 놓친 회차를 따라잡아요)
 // ════════════════════════════════════════════════════════
-const TAS_SLOTS = [10, 16];
+const TAS_SLOTS = [11, 16];   // Apps Script가 10시대·15시대에 TAS 값을 갱신한 뒤라 11:00·16:00에 다시 불러와요
 const TAS = { started: false, lastRun: Date.now(), tick: null };
 function tasKst(ms) { const d = new Date(ms + 9 * 3600e3); return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate() }; }
 function tasSlotAt(y, m, d, h) { return Date.UTC(y, m, d, h) - 9 * 3600e3; }
