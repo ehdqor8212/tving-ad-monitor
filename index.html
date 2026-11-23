@@ -2022,6 +2022,28 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
 
   <div class="metrics" id="pc-kpi"></div>
 
+  <div class="card" id="pc-top-card" data-fold="pc-top">
+    <div class="inv-top" style="margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">📉 TOP20 소진 추이 — 세팅 대비 실제 소진 · 미소진 · 앞으로 부킹</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="inv-seg" id="pc-top-mode">
+          <button data-v="tot" onclick="topSet('mode','tot')">합계</button>
+          <button data-v="paid" onclick="topSet('mode','paid')">유가</button>
+          <button data-v="free" onclick="topSet('mode','free')">무가</button>
+        </div>
+        <div class="inv-seg" id="pc-top-unit">
+          <button data-v="amt" onclick="topSet('unit','amt')">금액</button>
+          <button data-v="imp" onclick="topSet('unit','imp')">노출</button>
+        </div>
+      </div>
+    </div>
+    <div class="inv-meta" id="pc-top-meta" style="margin-bottom:10px">TOP20 소진 추이 시트를 불러오는 중…</div>
+    <div class="metrics" id="pc-top-kpi"></div>
+    <div style="position:relative;height:300px"><canvas id="ch-top"></canvas></div>
+    <div class="inv-hint" style="margin-top:4px">파란 막대 = 실제 소진 · 연한 파랑 = 세팅보다 더 나간 만큼 · 빨강 = 미소진 · 검은 선 = 세팅 일예산 · 주황 점선 = 청약 기준 필요 일예산 (앞으로 남은 날 포함)</div>
+    <div id="pc-top-unfilled"></div>
+  </div>
+
   <div class="card" data-fold="pc-chart">
     <div class="inv-top" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="card-title" id="pc-chart-title" style="margin-bottom:0">일별 필요 노출</div>
@@ -7986,6 +8008,143 @@ function dactLoad(force) {
   });
   return DACT.loading;
 }
+// ════════════════════════════════════════════════════════
+// 📉 TOP20 소진 추이 ('TOP20 일자별 소진 필요량' 시트 → TopTrend.gs getTop20Trend)
+//   실적_일자별: 세팅 일예산 대비 실제 소진 · 미소진 / 부킹 현황: 청약 기준 필요 일예산 / 실적_캠페인일자: 캠페인별 미소진
+// ════════════════════════════════════════════════════════
+const TOPT = { days: [], book: [], camp: {}, asOf: '', loaded: false, loading: null, err: '', at: '', mode: 'tot', unit: 'amt', chart: null };
+const topNum = v => Number(String(v ?? '').replace(/[^\d.-]/g, '')) || 0;
+const topIsDay = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || ''));
+function topParse(d) {
+  const V = (d && d.daily) || [], B = (d && d.book) || [], C = (d && d.camp) || [];
+  const byDay = {};
+  // 실적_일자별: '세팅 일예산' 헤더 아래 = 금액 블록, '세팅 노출' 헤더 아래 = 노출 블록
+  const block = (hdrTest, kind) => {
+    const hi = V.findIndex(r => String(r[0] || '').trim() === '일자' && hdrTest(String(r[2] || '').trim())); if (hi < 0) return;
+    for (let i = hi + 1; i < V.length; i++) {
+      const r = V[i] || []; if (!topIsDay(r[0])) break;
+      const day = invToDay(String(r[0]).slice(0, 10)); if (day === null) continue;
+      const o = byDay[day] || (byDay[day] = { day });
+      const has = String(r[3] ?? '').trim() !== '';   // 실제 칸이 비면 아직 집계 전
+      o[kind] = { has, paid: { set: topNum(r[2]), act: topNum(r[3]), un: topNum(r[4]) }, free: { set: topNum(r[6]), act: topNum(r[7]), un: topNum(r[8]) },
+        tot: { set: topNum(r[10]), act: topNum(r[11]), un: topNum(r[12]) } };
+      if (kind === 'amt') o.need = topNum(r[15]);
+    }
+  };
+  block(h => h === '세팅 일예산', 'amt'); block(h => h === '세팅 노출', 'imp');
+  TOPT.days = Object.values(byDay).sort((a, b) => a.day - b.day);
+  const asRow = V.find(r => (r || []).some(v => String(v || '').trim() === '실적 반영일'));
+  TOPT.asOf = asRow ? String(asRow[asRow.findIndex(v => String(v || '').trim() === '실적 반영일') + 1] || '') : '';
+  // 부킹 현황: 일자 | 요일 | 유가 일예산 | 유가 일노출 | 무가 일예산 | 무가 일노출 | 합계 일예산 | 합계 일노출 | … | 진행 캠페인 수
+  const bi = B.findIndex(r => String(r[0] || '').trim() === '일자' && String(r[2] || '').includes('일예산'));
+  TOPT.book = [];
+  if (bi >= 0) for (let i = bi + 1; i < B.length; i++) {
+    const r = B[i] || []; if (!topIsDay(r[0])) break;
+    const day = invToDay(String(r[0]).slice(0, 10)); if (day === null) continue;
+    TOPT.book.push({ day, paid: { amt: topNum(r[2]), imp: topNum(r[3]) }, free: { amt: topNum(r[4]), imp: topNum(r[5]) }, tot: { amt: topNum(r[6]), imp: topNum(r[7]) }, n: topNum(r[10]) });
+  }
+  // 실적_캠페인일자(최근 14일 · 미소진 있는 행만): 캠페인 ID → [{day, un, unI, set, act}]
+  TOPT.camp = {};
+  C.slice(1).forEach(r => {
+    const id = String(r[1] || '').trim(), day = invToDay(String(r[0] || '').slice(0, 10)); if (!id || day === null) return;
+    (TOPT.camp[id] || (TOPT.camp[id] = { name: String(r[2] || ''), tmpl: String(r[3] || ''), paid: String(r[4] || ''), list: [] }))
+      .list.push({ day, set: topNum(r[5]), act: topNum(r[6]), un: topNum(r[7]), unI: topNum(r[8]) });
+  });
+}
+function topLoad(force) {
+  if (TOPT.loading && !force) return TOPT.loading;
+  TOPT.loading = new Promise(res => {
+    if (!(window.google && google.script && google.script.run)) { TOPT.err = 'Apps Script 웹앱에서만 불러올 수 있어요'; return res(); }
+    google.script.run.withSuccessHandler(d => {
+      try { topParse(d); TOPT.loaded = true; TOPT.err = ''; TOPT.at = (d && d.fetchedAt) || ''; } catch (e) { TOPT.err = e.message; }
+      res();
+      if (document.getElementById('sec-pace')?.classList.contains('on')) { topRender(); paceRenderCamps(); }
+      if (document.getElementById('sec-forecast')?.classList.contains('on') && FC.last) fcRun();
+    }).withFailureHandler(e => { TOPT.err = (e && e.message) || String(e); res(); topRender(); }).getTop20Trend();
+  });
+  return TOPT.loading;
+}
+// 실제가 집계된 날만
+const topDone = kind => TOPT.days.filter(o => o[kind] && o[kind].has);
+// 최근 n일 (실적 집계된 날 기준) 합계
+function topRecent(n, kind, seg) {
+  const L = topDone(kind).slice(-n), s = { set: 0, act: 0, un: 0, n: L.length, from: L[0]?.day, to: L[L.length - 1]?.day };
+  L.forEach(o => { const x = o[kind][seg]; s.set += x.set; s.act += x.act; s.un += x.un; });
+  return s;
+}
+function topMax(kind, seg) {
+  let best = null; topDone(kind).forEach(o => { const v = o[kind][seg].act; if (!best || v > best.v) best = { v, day: o.day }; });
+  return best;
+}
+// 캠페인 ID의 최근 n일 미소진 (금액 · 노출 · 일수)
+function topCampUn(id, n) {
+  const c = id && TOPT.camp[id]; if (!c) return null;
+  const last = TOPT.days.length ? topDone('amt').slice(-1)[0]?.day : null;
+  const since = (last ?? invToday()) - n + 1;
+  const L = c.list.filter(x => x.day >= since); if (!L.length) return null;
+  return { un: L.reduce((a, x) => a + x.un, 0), unI: L.reduce((a, x) => a + x.unI, 0), days: L.length, last: Math.max(...L.map(x => x.day)) };
+}
+function topSet(k, v) { TOPT[k] = v; topRender(); }
+function topRender() {
+  const meta = document.getElementById('pc-top-meta'); if (!meta) return;
+  const segBtns = (id, cur) => document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+  segBtns('pc-top-mode', TOPT.mode); segBtns('pc-top-unit', TOPT.unit);
+  const kpi = document.getElementById('pc-top-kpi'), un = document.getElementById('pc-top-unfilled');
+  if (!TOPT.loaded) {
+    meta.innerHTML = TOPT.err ? `<span style="color:var(--red)">TOP20 소진 추이 시트를 불러오지 못했어요: ${invEsc(TOPT.err)}</span> — 시트 열람 권한과 TopTrend.gs 배포를 확인해 주세요` : 'TOP20 소진 추이 시트를 불러오는 중…';
+    kpi.innerHTML = ''; un.innerHTML = ''; return;
+  }
+  const seg = TOPT.mode, kind = TOPT.unit, isAmt = kind === 'amt', fmt = isAmt ? invW : invN, segTxt = { tot: '합계', paid: '유가', free: '무가' }[seg];
+  const t = invToday();
+  meta.innerHTML = `<b>TOP20 일자별 소진 필요량</b> 시트 · 실적 반영일 <b>${invEsc(TOPT.asOf || '—')}</b> · 불러온 시각 ${invTime(TOPT.at)} · ` +
+    `<span style="color:var(--text3)">세팅 = ACTIVE 캠페인 일예산(${isAmt ? '금액' : '일예산 ÷ 과금단가 × 1,000'}) · 미소진 = 캠페인별 (세팅 − 실제)가 양수인 부분만 합한 값 · 부킹 = 청약금액 ÷ 집행일수 · 일시정지 올인원PKG 제외 · 🔒 읽기만 해요</span>`;
+  // KPI
+  const r7 = topRecent(7, kind, seg), mx = topMax(kind, seg);
+  const fut = TOPT.book.filter(b => b.day >= t && b.day < t + 30);
+  const bMax = fut.reduce((a, b) => (!a || b[seg][kind] > a.v) ? { v: b[seg][kind], day: b.day } : a, null);
+  const rate = r7.set ? r7.act / r7.set : null, unRate = r7.set ? r7.un / r7.set : null;
+  const K = (lbl, val, sub, cls) => `<div class="metric"><div class="metric-label">${lbl}</div><div class="metric-value"${cls ? ` style="color:var(--${cls})"` : ''}>${val}</div><div class="metric-sub">${sub}</div></div>`;
+  kpi.innerHTML =
+    K(`최근 ${r7.n}일 소진율 (${segTxt})`, rate === null ? '—' : (rate * 100).toFixed(1) + '%', r7.n ? `실제 ${fmt(r7.act)} ÷ 세팅 ${fmt(r7.set)} · ${invMD(r7.from)}~${invMD(r7.to)}` : '실적이 없어요', rate !== null && rate < 0.95 ? 'red' : '') +
+    K(`최근 ${r7.n}일 미소진`, fmt(r7.un), unRate === null ? '—' : `세팅의 ${(unRate * 100).toFixed(1)}% · 초과 소진과 상계하지 않은 값`, r7.un > 0 ? 'red' : '') +
+    K('하루 최대 실제 소진', mx ? fmt(mx.v) : '—', mx ? `${invISO(mx.day)}(${invDOW(mx.day)}) · 지금까지 실제로 나간 최대` : '—') +
+    K('앞으로 30일 부킹 최대', bMax ? fmt(bMax.v) : '—', bMax && mx ? `${invISO(bMax.day)}(${invDOW(bMax.day)}) · 하루 최대 실제 소진의 <b>${(bMax.v / mx.v * 100).toFixed(0)}%</b>` : '부킹 현황 데이터가 없어요', bMax && mx && bMax.v > mx.v ? 'red' : '');
+  // 그래프: 실제(막대) + 미소진(빨간 막대, 쌓기) + 세팅(선) + 부킹(점선, 앞으로 포함)
+  const el = document.getElementById('ch-top');
+  if (el && typeof Chart !== 'undefined') {
+    if (TOPT.chart) { TOPT.chart.destroy(); TOPT.chart = null; }
+    const first = TOPT.days.length ? TOPT.days[0].day : t, lastBook = TOPT.book.length ? TOPT.book[TOPT.book.length - 1].day : t;
+    const end = Math.max(TOPT.days.length ? TOPT.days[TOPT.days.length - 1].day : t, Math.min(lastBook, t + 30));
+    const days = []; for (let d = first; d <= end; d++) days.push(d);
+    const dm = {}; TOPT.days.forEach(o => { dm[o.day] = o; }); const bm = {}; TOPT.book.forEach(b => { bm[b.day] = b; });
+    const g = (d, f) => { const o = dm[d] && dm[d][kind]; return o && o.has ? f(o[seg]) : null; };
+    TOPT.chart = new Chart(el, {
+      data: { labels: days.map(d => `${invMD(d)}(${invDOW(d)})`), datasets: [
+        { type: 'bar', label: '실제 소진', data: days.map(d => g(d, x => Math.min(x.act, x.set) || x.act)), backgroundColor: '#2563eb', stack: 's', order: 3 },
+        { type: 'bar', label: '초과 소진', data: days.map(d => g(d, x => Math.max(0, x.act - x.set))), backgroundColor: '#93c5fd', stack: 's', order: 3 },
+        { type: 'bar', label: '미소진', data: days.map(d => g(d, x => x.un)), backgroundColor: '#e8112d', stack: 's', order: 3 },
+        { type: 'line', label: '세팅 일예산', data: days.map(d => { const o = dm[d] && dm[d][kind]; return o ? o[seg].set || null : null; }), borderColor: '#111827', borderWidth: 2, pointRadius: 0, fill: false, order: 1 },
+        { type: 'line', label: '부킹 필요 (청약 기준)', data: days.map(d => bm[d] ? bm[d][seg][kind] : null), borderColor: '#d97706', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 2 },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } },
+          tooltip: { filter: i => i.raw !== null && i.raw > 0, callbacks: { label: c => `${c.dataset.label}: ${fmt(c.raw)}`,
+            footer: items => { const o = dm[days[items[0].dataIndex]]; const x = o && o[kind] && o[kind].has ? o[kind][seg] : null; return x && x.set ? `소진율 ${(x.act / x.set * 100).toFixed(1)}%` : ''; } } } },
+        scales: { x: { stacked: true, ticks: { font: { size: 10 }, color: c => { const d = days[c.index]; return d === t ? '#e8112d' : invWeekend(d) ? '#2563eb' : '#6b7280'; } } },
+          y: { stacked: true, ticks: { callback: v => invShort(v), font: { size: 10 } } } },
+      },
+    });
+  }
+  // 최근 미소진 캠페인 (최근 7일 합, 큰 순)
+  const rows = Object.entries(TOPT.camp).map(([id, c]) => ({ id, c, s: topCampUn(id, 7) })).filter(x => x.s && (seg === 'tot' || (seg === 'paid') === (x.c.paid === '유가')));
+  rows.sort((a, b) => b.s.un - a.s.un);
+  un.innerHTML = `<div class="card-title" style="margin:14px 0 6px;font-size:13px">🔻 최근 7일 미소진 캠페인 (${segTxt}) — ${rows.length}건</div>` + (rows.length
+    ? `<div class="tbl-wrap"><table class="inv-table"><thead><tr><th class="inv-stick">청약명</th><th style="text-align:left">상품 템플릿</th><th>구분</th><th>미소진 일수</th><th>마지막 미소진일</th><th>미소진 금액</th><th>미소진 노출</th></tr></thead><tbody>` +
+      rows.slice(0, 15).map(x => `<tr><td class="inv-stick" title="${invEsc(x.id)}">${invEsc(x.c.name)}</td><td style="color:var(--text2)">${invEsc(x.c.tmpl)}</td><td>${invEsc(x.c.paid)}</td><td class="num">${x.s.days}일</td><td class="num">${invMD(x.s.last)}</td><td class="num b" style="color:var(--red)">${invW(x.s.un)}</td><td class="num">${invN(x.s.unI)}</td></tr>`).join('') +
+      `</tbody></table></div>${rows.length > 15 ? `<div class="inv-hint" style="margin-top:4px">상위 15건만 보여줘요 · 아래 '선택한 날짜의 캠페인' 표의 <b>최근 미소진</b> 열에서도 볼 수 있어요</div>` : ''}`
+    : '<div class="inv-hint">최근 7일 동안 미소진이 없어요</div>');
+}
 // 한 캠페인의 칸별 비율
 //   ① 캠페인 자체 실적(총 3만 노출 이상): 실제로 나간 비율 그대로 — 타겟 밖 칸·성연령 미상(oth)도 포함
 //   ② 같은 상품의 최근 30일 비율(없거나 적으면 전체 영상) — 타겟 칸 안에서만 나눠요
@@ -8152,6 +8311,7 @@ async function fcOnShow() {
   await shareLoad();
   if (!INV.loaded && invHasLive()) invLoad(false);
   if (!DACT.loaded && !DACT.err) dactLoad();
+  if (!TOPT.loaded && !TOPT.err) topLoad();
   const sel = document.getElementById('fc-prod');
   if (sel && !sel.options.length) {
     const seen = new Set(FC_PRODUCTS);
@@ -8173,6 +8333,23 @@ function fcOverlap(sc, tgt, big) {
   // 비영상은 하루 한도(최대 일 노출 × 성연령 비중)가 '성연령 미상 포함 전체' 대비라서, 기존 수요도 같은 분모(pr.tot)로 나눠요
   if (pr) { const all = sc.nonVid && pr.tot ? pr.tot : Object.values(pr.cells).reduce((a, v) => a + v, 0); if (all) return sc.dm.cells.reduce((a, k) => a + (pr.cells[k] || 0), 0) / all; }
   return sc.dm.cells.length / 16;
+}
+// 📉 TOP20 실제 소진 체크 (판정 카드 안 한 줄) — 판정은 바꾸지 않고 같이 보여줘요
+function fcTopCheck(tc, needDay) {
+  if (!tc) return `<div class="fc-v-sub inv-hint">📉 실제 소진 체크: ${TOPT.err ? `TOP20 소진 추이 시트를 불러오지 못했어요 (${invEsc(TOPT.err)})` : 'TOP20 소진 추이 시트를 불러오는 중…'}</div>`;
+  const pct = v => (v * 100).toFixed(0) + '%';
+  let main;
+  if (!tc.peak || !tc.mx) main = `이 기간은 부킹 현황 시트에 날짜가 없어서 비교할 수 없어요${tc.lastBook !== null ? ` (부킹 현황은 ${invISO(tc.lastBook)}까지)` : ''}`;
+  else {
+    const c = tc.use > 1 ? 'var(--red)' : tc.use > 0.9 ? '#d97706' : 'var(--text)';
+    const msg = tc.use > 1 ? '⚠️ 지금까지 하루에 실제로 나간 적 없는 양이에요' : tc.use > 0.9 ? '하루 최대 실적에 가까워요' : '실제로 나가 본 범위 안이에요';
+    main = `이 기간 부킹 하루 최대 ${invN(tc.peak.v)} (${invMD(tc.peak.day)}) + 신규 ${invN(needDay)} = <b>${invN(tc.total)}</b> 노출 → 지금까지 하루 최대 실제 노출 ${invN(tc.mx.v)} (${invMD(tc.mx.day)})의 <b style="color:${c}">${pct(tc.use)}</b> · ${msg}` +
+      (tc.cover < 1 ? ` <span class="inv-hint">(부킹 현황은 ${invISO(tc.lastBook)}까지라 그 뒤 날짜는 빠졌어요)</span>` : '');
+  }
+  const r = tc.r7, f = tc.r7f;
+  const recent = r.n ? ` · 최근 ${r.n}일 소진율 <b>${r.set ? pct(r.act / r.set) : '—'}</b>, 미소진 <b style="color:${r.un > 0 ? 'var(--red)' : 'inherit'}">${invW(r.un)}</b>${f.set ? ` (무가 소진율 ${pct(f.act / f.set)})` : ''}` +
+    (r.un > 0 ? ' — 최근에도 다 못 나가고 있어서 자리가 빠듯할 수 있어요' : '') : '';
+  return `<div class="fc-v-sub">📉 <b>실제 소진 체크</b> <span class="inv-hint">(TOP20 소진 추이 시트 · 실적 반영일 ${invEsc(TOPT.asOf || '—')})</span><br>${main}${recent}</div>`;
 }
 // 📖 각 항목 설명 (펼쳐서 보기)
 function fcExplain(sc) {
@@ -8196,8 +8373,9 @@ function fcExplain(sc) {
     ['🧾 기존 수요', '청약과 실소진(캠페인 현황에서 아직 남은 노출 ÷ 남은 일수) 각각의 이번 기간 하루 평균을 큰 순으로 보여줘요. 겹침 비율 = 타겟 겹침이에요.'],
     ['📚 유사 사례', '캠페인 현황에서 같은 상품 · 겹치는 성연령으로 이미 시작한 캠페인이에요. <b>하루 평균 실집행</b> = 지금까지 노출 ÷ 지난 일수 — 비슷한 캠페인이 하루 실제로 얼마나 나갔는지 보여줘요. <b>달성 갭</b> = 노출달성율 − 기간달성율 (−5%p 이하면 페이스 미달, 빨간색). 성연령이 같으면 맨 위, 일부 겹치면 그다음, 예산이 비슷한 순이에요.'],
   ];
+  const top = sc.top20 ? [['📉 실제 소진 체크 (TOP20)', "'TOP20 일자별 소진 필요량' 시트로 보는 참고 값이에요 (판정은 바꾸지 않아요). <b>이 기간 부킹 하루 최대</b> = 부킹 현황 탭(청약금액 ÷ 집행일수 기준 일노출, 유가 + 무가)에서 이 기간 중 가장 큰 날 + 신규 하루 필요(15초 환산 안 함)를, 실적_일자별 탭의 <b>지금까지 하루 최대 실제 노출</b>과 비교해요: 90% 이하면 나가 본 범위 · 90~100% 가까움 · 100% 초과면 한 번도 나간 적 없는 양. 이미 청약에 들어간 건이면 부킹에도 들어 있어서 두 번 세져요. <b>최근 7일 소진율 · 미소진</b>은 세팅 일예산 대비 실제 소진이고, 미소진이 계속 생기면 빈 슬롯 계산보다 실제 자리가 빠듯하다는 신호예요."]] : [];
   return `<details class="card" style="padding:0"><summary style="padding:12px 14px;cursor:pointer;font-size:13px;font-weight:600">📖 각 항목 설명 — 숫자가 어떻게 나왔나요?</summary>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">${(sc.nonVid ? nonvid : vid).concat(common).map(x => row(x[0], x[1])).join('')}</table></details>`;
+    <table style="width:100%;border-collapse:collapse;font-size:12px">${(sc.nonVid ? nonvid : vid).concat(top, common).map(x => row(x[0], x[1])).join('')}</table></details>`;
 }
 function fcRun() {
   const out = document.getElementById('fc-result'); if (!out) return;
@@ -8308,6 +8486,16 @@ function fcRun() {
   });
   sim.sort((a, b) => b.s - a.s || Math.abs((a.budget || 0) - sc.budget) - Math.abs((b.budget || 0) - sc.budget));
 
+  // ③-b TOP20 실제 소진 체크 ('TOP20 일자별 소진 필요량' 시트): 이 기간 부킹 하루 최대 + 신규 vs 지금까지 하루 최대 실제 노출
+  let tc = null;
+  if (sc.top20 && TOPT.loaded) {
+    const mx = topMax('imp', 'tot'), inP = TOPT.book.filter(b => b.day >= from && b.day <= to);
+    const peak = inP.reduce((a, b) => (!a || b.tot.imp > a.v) ? { v: b.tot.imp, day: b.day } : a, null);
+    const lastBook = TOPT.book.length ? TOPT.book[TOPT.book.length - 1].day : null;
+    const total = peak ? peak.v + needDay : null, use = total && mx && mx.v ? total / mx.v : null;
+    tc = { mx, peak, total, use, lastBook, cover: inP.length / days, r7: topRecent(7, 'amt', 'tot'), r7f: topRecent(7, 'amt', 'free') };
+  }
+
   // ④ 화면
   const K = (lbl, val, sub, cls) => `<div class="metric"><div class="metric-label">${lbl}</div><div class="metric-value"${cls ? ` style="color:var(--${cls})"` : ''}>${val}</div><div class="metric-sub">${sub}</div></div>`;
   const tgtTxt = sc.dm ? sc.dm.code : '성연령 전체';
@@ -8318,6 +8506,7 @@ function fcRun() {
     ${nv ? `<div class="fc-v-sub"><b>한도 사용률 ${nv.use === Infinity ? '—' : (nv.use * 100).toFixed(1) + '%'}</b> = (기간 중 기존 수요 ${invN(demandDay)} + 신규 ${invN(needDay)}) ÷ 하루 한도 ${invN(nv.cap)} · ${verdict[2]} <span class="inv-hint">(기준: 80% 이하 진행 · 100% 이하 검토 · 초과 어려움)</span></div>
       <div class="fc-v-sub">⚠️ 정확한 가용량이 아니라 <b>"실제로 하루 이만큼까지 나간 적 있다"</b>는 기준이에요. 최대일(${invEsc(nv.st.maxDay)})이 이벤트로 튄 날이면 한도가 크게 잡혀요 — 상위 10% ${invN(nv.st.p90 * nv.dShare)} · 최근 30일 평균 ${invN(nv.st.avg30 * nv.dShare)}${sc.dm ? ' (성연령 비중 반영)' : ''}과도 비교해 주세요. 이 기간 예상 하루 총 노출 ${invN(nv.total)}은 최근 30일 평균의 <b>${nv.st.avg30 ? (nv.total / (nv.st.avg30 * nv.dShare)).toFixed(1) + '배' : '—'}</b>예요.</div>` : ''}
     ${verdict && !sc.nonVid ? `<div class="fc-v-sub"><b>소화율 ${ratio === Infinity ? '여유 없음' : (ratio * 100).toFixed(1) + '%'}</b> = 신규 하루 필요 ${invN(needSlot)} ÷ 여유 ${invN(room)} · ${verdict[2]} <span class="inv-hint">(기준: 20% 이하 진행 · 35% 이하 검토 · 초과 어려움)</span></div>` : ''}
+    ${sc.top20 ? fcTopCheck(tc, needDay) : ''}
   </div>
   <div class="metrics">
     ${sc.nonVid ? `
@@ -8612,6 +8801,7 @@ async function paceOnShow() {
   await shareLoad();
   paceApplyPrefs();
   foldInit('sec-pace');
+  if (!TOPT.loaded && !TOPT.err) topLoad(); else topRender();
   if (!ST.rows || !ST.rows.length) { paceShowEmpty(); return; }
   PACE.builtFrom = null; paceRender();
 }
@@ -8809,9 +8999,12 @@ function paceRenderCamps() {
   let sN = 0, sP = 0;
   let h = `<table class="inv-table"><thead><tr><th class="inv-stick">청약명</th><th style="text-align:left">상품 템플릿</th><th>상태</th><th>기간</th><th>CPM</th>
     <th>기간달성</th><th>노출달성</th><th>갭</th><th>목표 노출</th><th>어제까지 집행</th><th>남은 노출</th><th>남은 일</th>
-    <th>계획 일노출</th><th>실소진 일 필요</th><th>이월분</th><th>설정</th></tr></thead><tbody>`;
+    <th>계획 일노출</th><th>실소진 일 필요</th><th>이월분</th><th title="TOP20 소진 추이 시트 · 최근 7일 (세팅 일예산 − 실제 소진) 합">최근 미소진</th><th>설정</th></tr></thead><tbody>`;
   list.forEach(r => {
     const carry = r.need - r.plan; sN += r.need; sP += r.plan;
+    const un = TOPT.loaded ? topCampUn(r.id, 7) : null;
+    const unTd = un ? `<td class="num" style="color:var(--red)" title="최근 7일 중 ${un.days}일 미소진 · 마지막 ${invMD(un.last)} · 노출 ${invN(un.unI)}">${invW(un.un)}<br><span style="font-size:10px">${un.days}일</span></td>`
+      : `<td class="num" style="color:var(--text3)">${TOPT.loaded && /TOP\s?20/i.test(r.tmpl) ? '없음' : '·'}</td>`;
     const gapC = r.gap === null ? 'var(--text3)' : r.gap <= -PACE_BEHIND_PP ? 'var(--red)' : r.gap >= PACE_BEHIND_PP ? '#2563eb' : 'var(--text2)';
     h += `<tr><td class="inv-stick" title="${invEsc(r.camp)}">${invEsc(r.name)}${r.house ? ' <span class="inv-tag pre">하우스·내부</span>' : ''}${r.ovr === 'target' ? ' <span class="inv-tag pre" title="내가 목표 노출을 지정함 (나에게만 적용)">🎯내 목표</span>' : ''}</td>
       <td style="color:var(--text2)">${invEsc(r.tmpl)}</td><td>${invEsc(r.status)}</td>
@@ -8820,10 +9013,10 @@ function paceRenderCamps() {
       <td class="num b" style="color:${gapC}">${r.gap === null ? '시작 전' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1) + '%p'}</td>
       <td class="num">${invN(r.T)}</td><td class="num">${invN(r.before)}</td><td class="num">${invN(r.remain)}</td><td class="num">${r.daysLeft}일</td>
       <td class="num">${invN(r.plan)}</td><td class="num b">${invN(r.need)}</td>
-      <td class="num" style="color:${carry > 0 ? 'var(--red)' : 'var(--text3)'}">${carry >= 0 ? '+' : '−'}${invN(Math.abs(carry))}</td>
+      <td class="num" style="color:${carry > 0 ? 'var(--red)' : 'var(--text3)'}">${carry >= 0 ? '+' : '−'}${invN(Math.abs(carry))}</td>${unTd}
       <td><button class="btn exc-mini" title="목표 노출 지정 또는 제외" onclick="excOpenFor('pace',${invEsc(JSON.stringify(r.name))})">🎯</button></td></tr>`;
   });
-  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="11"></td><td class="num">${invN(sP)}</td><td class="num">${invN(sN)}</td><td class="num">${sN - sP >= 0 ? '+' : '−'}${invN(Math.abs(sN - sP))}</td><td></td></tr></tbody></table>`;
+  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="11"></td><td class="num">${invN(sP)}</td><td class="num">${invN(sN)}</td><td class="num">${sN - sP >= 0 ? '+' : '−'}${invN(Math.abs(sN - sP))}</td><td></td><td></td></tr></tbody></table>`;
   el.innerHTML = h;
 }
 
@@ -8968,6 +9161,7 @@ function tasRefreshAll(manual) {
   if (typeof loadFromAppsScriptHost === 'function') loadFromAppsScriptHost();
   if (typeof invHasLive === 'function' && invHasLive()) shareLoad(true).then(() => invLoad(!!manual));
   if (typeof DACT !== 'undefined' && (DACT.loaded || DACT.err)) { DACT.err = ''; dactLoad(true); }
+  if (typeof TOPT !== 'undefined' && (TOPT.loaded || TOPT.err)) { TOPT.err = ''; topLoad(true); }
 }
 function tasCheckSlot() { if (tasLastSlot(Date.now()) > TAS.lastRun) tasRefreshAll(false); }
 function tasSlotStart() {
