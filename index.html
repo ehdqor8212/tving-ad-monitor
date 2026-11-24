@@ -2252,9 +2252,13 @@ function supLoad(force) {
 }
 function supRenderIfOn() { if (document.getElementById('sec-supply')?.classList.contains('on')) supRender(); }
 async function supOnShow() {
-  await shareLoad();
-  if (!INV.loaded && invHasLive()) invLoad(false);
+  // 공급은 바로 불러와요 (수요 쪽 준비가 늦거나 실패해도 공급 화면은 떠야 해요)
   if (!SUP.ath && !SUP.err) supLoad(false);
+  supRender();
+  try {
+    await shareLoad();
+    if (!INV.loaded && invHasLive()) invLoad(false);
+  } catch (e) { console.warn('공급 탭: 수요 데이터 준비 실패', e); }
   supRender();
 }
 function supSet(k, v) {
