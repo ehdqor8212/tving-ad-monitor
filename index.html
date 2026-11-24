@@ -598,6 +598,9 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
 .inv-legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
 .inv-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:var(--surface3);color:var(--text2);white-space:nowrap}
 .inv-tag.y{background:var(--blue-bg);color:var(--blue-text)}
+.sup-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.sup-kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.sup-kpi-l{font-size:11px;color:var(--text3);font-weight:600}.sup-kpi-v{font-size:20px;font-weight:700;margin:4px 0 2px;font-variant-numeric:tabular-nums}.sup-kpi-s{font-size:11px;color:var(--text3);line-height:1.5}
 .inv-tag.n{background:var(--green-bg);color:var(--green-text)}
 .inv-tag.pre{background:var(--yellow-bg);color:var(--yellow-text)}
 #inv-issues summary,#pc-skipped summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--text2);list-style:none}
@@ -749,6 +752,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <button class="tab" onclick="go('inventory',this)">📦 상품별 인벤토리 현황</button>
       <button class="tab" onclick="go('pace',this)">📈 실소진 기반 인벤토리</button>
       <button class="tab" onclick="go('forecast',this)">🔮 소진 예측</button>
+      <button class="tab" onclick="go('supply',this)">🏭 공급 · 수요</button>
       <button class="tab" onclick="go('alrt',this)">알럿 <span id="acnt" style="color:var(--red)"></span></button>
       <button class="tab" onclick="go('slk',this)">Slack</button>
     </div>
@@ -1717,6 +1721,27 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
     </details>
 
     <!-- 🎯 목표 지정·제외 / 설정 저장 -->
+    <details id="guide-sup" style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">🏭 공급 · 수요 — 보는 방법</summary>
+      <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
+        <div style="margin-bottom:10px"><b style="color:var(--text)">무엇을 보나요?</b> 영상 광고 자리가 하루에 얼마나 있고(공급), 들어온 청약·실소진이 얼마나 필요한지(수요)를 한 화면에서 같이 봐요. 영상 인스트림 Non-KBO 기준이에요.</div>
+        <div style="margin-bottom:6px"><b style="color:var(--text)">공급은 어디서 오나요?</b></div>
+        <div style="border-left:3px solid var(--blue);padding:6px 12px;background:var(--surface2);border-radius:0 6px 6px 0;margin-bottom:10px">
+          Athena 광고 요청 로그(최근 28일)를 매일 아침 'TAS 성연령 실적' 시트의 <b>공급_Athena</b> 탭에 넣고, 그 탭을 읽어요.<br>
+          · <b>채운 슬롯</b> = 광고가 실제로 붙은 자리 · <b>빈 슬롯</b> = 광고 요청은 왔는데 못 채운 자리 (pod 최대 개수 − 채운 개수)<br>
+          · <b>계수</b> = 노출 ÷ 채운 슬롯. 빈 자리가 실제 노출로 이어지는 비율이에요. 버킷(플랫폼 × TOP20)마다 실측해요. 1.0을 넘으면 1.0으로 잘라요.<br>
+          · <b>남는 가용</b> = 빈 슬롯 × 계수 · <b>공급 상한</b> = 실제 노출 + 남는 가용
+        </div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">위 숫자 6개</b> 하루 공급 상한 · 하루 실제 노출(fill rate = 채운 ÷ (채운 + 빈)) · 하루 남는 가용 · 앞으로 4주 하루 수요(청약과 실소진 기준 중 큰 쪽) · 수요 ÷ 공급 상한(80% 이하 여유, 95%까지 빠듯, 넘으면 부족) · Moloco 시트 가용 대비 비율이에요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">📊 하루 공급 vs 수요</b> 왼쪽은 지난 28일 실제(파랑 = 노출, 초록 = 남은 빈 자리), 오른쪽은 앞으로 6주예요. 초록 점선(공급 상한)보다 주황 선(청약 수요)·빨간 점선(실소진 기준 필요)이 위로 가면 그 날은 자리가 모자랄 수 있어요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">📅 앞으로 6주</b> 7일씩 묶은 하루 평균이에요. <b>남는 하루 가용</b>이 신규 청약을 받을 수 있는 대략적인 양이에요. 정확한 판정은 🔮 소진 예측에서 해 주세요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">🧱 버킷별 공급</b> TVING·Wavve × TOP20·TOP20 외로 나눈 하루 평균이에요. 'Athena ÷ Moloco'가 100%보다 낮으면 Athena가 빈 자리를 더 적게 센 거예요. KBO 줄은 참고용이고 합계에서 빠져요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">👥 성연령별 하루 가용</b> 성연령 타겟 캠페인이 쓸 수 있는 자리예요. 성별·연령은 맞춤형 광고 동의 + 로그인 요청에만 있어서 '미상'이 커요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">🔁 Athena vs Moloco</b> 두 원천의 일자별 빈 슬롯이에요. 비율이 평소보다 30% 넘게 벗어난 날을 아래에 적어 줘요. 그런 날은 한쪽 집계를 의심해 보세요.</div>
+        <div style="margin-bottom:10px"><b style="color:var(--text)">범위 · 플랫폼</b> 'TOP20 외' 상품(베이직 등)은 TOP20 콘텐츠 자리도 같이 쓸 수 있어요. 그래서 여유 판단은 <b>영상 전체</b>로 먼저 보세요. 수요는 플랫폼별로 나눌 수 없어서 TVING·Wavve를 고르면 공급만 보여요.</div>
+        <div><b style="color:var(--text)">소진 예측과의 관계</b> 🔮 소진 예측 위쪽 <b>공급 기준</b>에서 'Athena (요청 로그)'를 고르면 이 탭과 같은 공급으로 판정해요. 기본은 지금처럼 Moloco 시트예요.</div>
+      </div>
+    </details>
     <details id="guide-ovr" style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
       <summary style="padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface2);list-style:none;display:flex;align-items:center;gap:8px">🎯 목표 지정·제외 · 설정 저장</summary>
       <div style="padding:14px;font-size:12px;line-height:1.9;color:var(--text2)">
@@ -2050,7 +2075,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
 
   <div class="card" id="pc-top-card" data-fold="pc-top">
     <div class="inv-top" style="margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:0">📉 TOP20 소진 추이 — 세팅 대비 실제 소진 · 미소진 · 앞으로 부킹</div>
+      <div class="card-title" style="margin-bottom:0">📉 TOP20 소진 추이 — 세팅 대비 실제 소진 · 미소진</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <div class="inv-seg" id="pc-top-mode">
           <button data-v="tot" onclick="topSet('mode','tot')">합계</button>
@@ -2066,7 +2091,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
     <div class="inv-meta" id="pc-top-meta" style="margin-bottom:10px">TOP20 소진 추이 시트를 불러오는 중…</div>
     <div class="metrics" id="pc-top-kpi"></div>
     <div style="position:relative;height:300px"><canvas id="ch-top"></canvas></div>
-    <div class="inv-hint" style="margin-top:4px">파란 막대 = 실제 소진 · 연한 파랑 = 세팅보다 더 나간 만큼 · 빨강 = 미소진 · 검은 선 = 세팅 일예산 · 주황 점선 = 청약 기준 필요 일예산 (앞으로 남은 날 포함)</div>
+    <div class="inv-hint" style="margin-top:4px">파란 막대 = 실제 소진 · 연한 파랑 = 세팅보다 더 나간 만큼 · 빨강 = 미소진 · 검은 선 = 세팅 일예산</div>
     <div id="pc-top-unfilled"></div>
   </div>
 
@@ -2132,7 +2157,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       </div>
       <div class="inv-actions">
         <button class="btn" onclick="openGuide('guide-fc')">❓ 보는 방법</button>
-        <button class="btn" onclick="fcLoadSupply(true)" title="TVING Inventory 시트에서 빈 슬롯 집계를 새로 계산해요">🔄 공급 다시 계산</button>
+        <button class="btn" onclick="fcLoadSupply(true)" title="선택한 공급 기준(Moloco 시트 / Athena)으로 빈 슬롯 집계를 새로 계산해요">🔄 공급 다시 계산</button>
       </div>
     </div>
     <div id="fc-meta" class="inv-meta">공급 데이터를 기다리는 중…</div>
@@ -2154,6 +2179,288 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
   </div>
   <div id="fc-result"></div>
 </div>
+
+<div id="sec-supply" class="sec">
+  <div class="card">
+    <div class="inv-top">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">🏭 공급 · 수요 (Athena)</div>
+        <div class="inv-sub">광고 요청 로그(Athena)로 센 빈 슬롯 공급과, 청약·실소진 수요를 한 화면에서 같이 봐요 · 영상 인스트림 Non-KBO 기준</div>
+      </div>
+      <div class="inv-actions">
+        <button class="btn" onclick="openGuide('guide-sup')">❓ 보는 방법</button>
+        <button class="btn" onclick="supLoad(true)" title="공급_Athena 탭과 Moloco 시트를 새로 읽어요">🔄 공급 다시 불러오기</button>
+      </div>
+    </div>
+    <div id="sup-meta" class="inv-meta">공급 데이터를 기다리는 중…</div>
+    <div class="inv-ctrl" style="margin-top:10px">
+      <span class="inv-lbl">범위</span>
+      <span class="inv-seg" id="sup-scope"><button data-v="all" class="on" onclick="supSet('scope','all')">영상 전체</button><button data-v="TOP20" onclick="supSet('scope','TOP20')">TOP20</button><button data-v="non_TOP20" onclick="supSet('scope','non_TOP20')">TOP20 외</button></span>
+      <span class="inv-lbl" style="margin-left:8px">플랫폼</span>
+      <span class="inv-seg" id="sup-plat"><button data-v="all" class="on" onclick="supSet('plat','all')">통합</button><button data-v="TVING" onclick="supSet('plat','TVING')">TVING</button><button data-v="Wavve" onclick="supSet('plat','Wavve')">Wavve</button></span>
+    </div>
+  </div>
+  <div id="sup-kpi" class="sup-kpis"></div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">📊 하루 공급 vs 수요</div>
+    <div class="inv-sub" style="margin-bottom:8px">막대 = 지난 28일 실제 노출 + 남은 빈 자리(가용) · 오른쪽 점선 = 요일별 공급 상한 · 선 = 청약 · 실소진 기준 하루 필요 노출(15초 환산)</div>
+    <div style="height:320px"><canvas id="ch-sup-main"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">📅 앞으로 6주 — 주별 하루 평균</div>
+    <div id="sup-weeks" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">🧱 버킷별 공급 (최근 28일 하루 평균)</div>
+    <div id="sup-buckets" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">👥 성연령별 하루 가용 (빈 자리 × 계수)</div>
+    <div class="inv-sub" style="margin-bottom:8px">성별·연령은 맞춤형 광고 동의 + 로그인 요청에만 있어요 · '미상'이 큰 건 정상이에요</div>
+    <div id="sup-demo" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">🔁 Athena vs Moloco 시트 — 일자별 빈 슬롯</div>
+    <div class="inv-sub" style="margin-bottom:8px">같은 범위·플랫폼 기준 · 두 원천이 크게 벌어지는 날은 한쪽 집계 이상일 수 있어요</div>
+    <div style="height:260px"><canvas id="ch-sup-cmp"></canvas></div>
+    <div id="sup-cmp-note" style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.8"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// 🏭 공급 · 수요 (Athena)
+//   공급 = Apps Script getSupplyAthena() ('TAS 성연령 실적' 시트 공급_Athena 탭 · 요청 로그 최근 28일)
+//   비교 = getSupplyMolocoDaily() (TVING Inventory 시트 raw_nofill_daily 일자 묶음)
+//   수요 = INV.rows(청약 일 필요 노출) · PACE.rows(실소진 기준 남은 하루 필요) · 15초 환산, 영상 · KBO 제외
+// ════════════════════════════════════════════════════════
+const SUP = { ath: null, mol: null, err: '', molErr: '', loading: null, scope: 'all', plat: 'all', charts: {}, wait: 0 };
+const SUP_AGES = ['0_19', '20_24', '25_29', '30_34', '35_39', '40_44', '45_49', '50_54', '55_59', '60_64', '65+', 'unknown'];
+try { const p = JSON.parse(localStorage.getItem('sup_prefs') || '{}'); if (p.scope) SUP.scope = p.scope; if (p.plat) SUP.plat = p.plat; } catch (e) { /* 기본값 */ }
+
+function supLoad(force) {
+  if (SUP.loading && !force) return SUP.loading;
+  const meta = document.getElementById('sup-meta');
+  if (meta) meta.textContent = '⏳ 공급 데이터를 불러오는 중… (Moloco 비교는 처음 한 번 10~30초 걸려요)';
+  if (!(window.google && google.script && google.script.run)) { SUP.err = 'Apps Script 웹앱에서만 불러올 수 있어요'; supRender(); return Promise.resolve(); }
+  const call = (fn, arg) => new Promise((ok, no) => { google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](arg); });
+  SUP.loading = Promise.all([
+    call('getSupplyAthena', !!force).then(d => { SUP.ath = d; SUP.err = ''; }, e => { SUP.err = (e && e.message) || String(e); }).then(supRenderIfOn),
+    call('getSupplyMolocoDaily', !!force).then(d => { SUP.mol = d; SUP.molErr = ''; }, e => { SUP.molErr = (e && e.message) || String(e); }).then(supRenderIfOn),
+  ]).then(() => { if (typeof FC !== 'undefined' && FC.src === 'athena' && SUP.ath) { FC.supply = SUP.ath; FC.err = ''; fcRenderMeta(); if (FC.last) fcRun(); } });
+  return SUP.loading;
+}
+function supRenderIfOn() { if (document.getElementById('sec-supply')?.classList.contains('on')) supRender(); }
+async function supOnShow() {
+  await shareLoad();
+  if (!INV.loaded && invHasLive()) invLoad(false);
+  if (!SUP.ath && !SUP.err) supLoad(false);
+  supRender();
+}
+function supSet(k, v) {
+  SUP[k] = v;
+  try { localStorage.setItem('sup_prefs', JSON.stringify({ scope: SUP.scope, plat: SUP.plat })); } catch (e) { /* 저장 없이 */ }
+  supRender();
+}
+const supIn = (plat, top) => (SUP.plat === 'all' || plat === SUP.plat) && (SUP.scope === 'all' || top === SUP.scope);
+const supCoef = (plat, top) => { const A = SUP.ath, c = A && A.coefBy && A.coefBy[`Non-KBO|${plat}|${top}`]; return c === undefined ? ((A && A.coef['Non-KBO']) || 0.97) : c; };
+const supPct = v => v === null || !isFinite(v) ? '—' : (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%';
+
+// 하루 수요 (15초 환산) — 청약 / 실소진 기준
+function supDemand(d) {
+  const inBig = big => !/KBO/i.test(big || '') && (SUP.scope === 'all' || (SUP.scope === 'TOP20') === (big === 'TOP20'));
+  let book = 0, pace = 0;
+  INV.rows.forEach(r => {
+    if (r.sec === '비영상' || r.ovr === 'exclude' || !r.daily || !inBig(r.big)) return;
+    if (r.start <= d && d <= r.end) book += r.daily * invWeight(r.sec);
+  });
+  (PACE.rows || []).forEach(r => {
+    if (r.sec === '비영상' || r.ovr === 'exclude' || !r.need || !inBig(r.big)) return;
+    if (r.first <= d && d <= r.end) pace += r.need * invWeight(r.sec);
+  });
+  return { book, pace };
+}
+
+// 지난 일자별 공급 (Non-KBO, 선택 범위)
+function supDaily() {
+  const by = {};
+  (SUP.ath ? SUP.ath.daily : []).forEach(([d, slot, plat, top, pods, ret, nf, imps]) => {
+    if (slot !== 'Non-KBO' || !supIn(plat, top)) return;
+    const o = by[d] || (by[d] = { pods: 0, ret: 0, nf: 0, imps: 0, avail: 0 });
+    o.pods += pods; o.ret += ret; o.nf += nf; o.imps += imps; o.avail += nf * supCoef(plat, top);
+  });
+  return by;
+}
+function supMolDaily() {
+  const by = {};
+  (SUP.mol ? SUP.mol.rows : []).forEach(([d, slot, plat, top, pods, served, nf]) => {
+    if (slot !== 'Non-KBO' || !supIn(plat, top)) return;
+    const o = by[d] || (by[d] = { served: 0, nf: 0 });
+    o.served += Number(served) || 0; o.nf += Number(nf) || 0;
+  });
+  return by;
+}
+
+function supRender() {
+  const meta = document.getElementById('sup-meta'); if (!meta) return;
+  document.querySelectorAll('#sup-scope button').forEach(b => b.classList.toggle('on', b.dataset.v === SUP.scope));
+  document.querySelectorAll('#sup-plat button').forEach(b => b.classList.toggle('on', b.dataset.v === SUP.plat));
+  const A = SUP.ath;
+  if (!A) {
+    meta.innerHTML = SUP.err ? `<span style="color:var(--red)">공급 데이터를 불러오지 못했어요: ${invEsc(SUP.err)}</span> — 'TAS 성연령 실적' 시트의 공급_Athena 탭과 SupplyAthena.gs 배포를 확인해 주세요` : '⏳ 공급 데이터를 불러오는 중…';
+    return;
+  }
+  const molCoef = (SUP.mol && SUP.mol.coef && SUP.mol.coef['Non-KBO']) || 0.89;
+  meta.innerHTML = `<b>공급</b> Athena 광고 요청 로그 · <b>${invEsc(A.window.from)} ~ ${invEsc(A.window.to)}</b> (${A.window.days}일) · 시트 갱신 ${invEsc(A.updatedAt || '—')} · 계수 = 노출 ÷ 채운 슬롯(버킷별 실측, 최대 1.0)<br>` +
+    `<b>수요</b> 운영마스터파일 청약${INV.loaded ? ` (${invTime(INV.meta.fetchedAt)})` : ' (불러오는 중)'} · 캠페인 현황 실소진${ST.rows && ST.rows.length ? ` (${invEsc(ST.lastUpdated || '')})` : ' (불러오는 중)'} · 보너스 포함 · 15초 환산 · KBO 상품 제외` +
+    (SUP.molErr ? `<br><span style="color:var(--text3)">Moloco 비교: ${invEsc(SUP.molErr)}</span>` : '');
+  if (ST.rows && ST.rows.length && PACE.builtFrom !== ST.rows) paceBuild();
+
+  const t = invToday(), daily = supDaily(), mol = supMolDaily();
+  const past = []; for (let d = invToDay(A.window.from); d <= invToDay(A.window.to); d++) past.push(d);
+  const fut = []; for (let d = t; d < t + 42; d++) fut.push(d);
+  // 요일별 공급 상한 (지난 28일 평균)
+  const dowCap = Array(7).fill(0), dowN = Array(7).fill(0);
+  past.forEach(d => { const o = daily[invISO(d)]; if (!o) return; const w = invDate(d).getUTCDay(); dowCap[w] += o.imps + o.avail; dowN[w]++; });
+  const capOf = d => { const w = invDate(d).getUTCDay(); return dowN[w] ? dowCap[w] / dowN[w] : null; };
+  const sum = (f) => past.reduce((a, d) => a + (daily[invISO(d)] ? f(daily[invISO(d)]) : 0), 0);
+  const nDays = past.filter(d => daily[invISO(d)]).length || 1;
+  const avg = { imps: sum(o => o.imps) / nDays, avail: sum(o => o.avail) / nDays, ret: sum(o => o.ret) / nDays, nf: sum(o => o.nf) / nDays };
+  avg.cap = avg.imps + avg.avail; avg.fill = avg.ret + avg.nf ? avg.ret / (avg.ret + avg.nf) : null;
+  const platAll = SUP.plat === 'all', demOk = INV.loaded;
+  const dem = fut.map(d => supDemand(d));
+  const next28 = dem.slice(0, 28), need28 = next28.reduce((a, x) => a + Math.max(x.book, x.pace), 0) / 28;
+  const cap28 = fut.slice(0, 28).reduce((a, d) => a + (capOf(d) || 0), 0) / 28;
+  // Moloco 같은 기간 하루 가용
+  const molDays = past.filter(d => mol[invISO(d)]);
+  const molAvail = molDays.length ? molDays.reduce((a, d) => a + mol[invISO(d)].nf, 0) * molCoef / molDays.length : null;
+
+  // ── KPI ──
+  const use = platAll && demOk && cap28 ? need28 / cap28 : null;
+  const useC = use === null ? 'var(--text)' : use <= 0.8 ? 'var(--green, #16a34a)' : use <= 0.95 ? '#d97706' : 'var(--red)';
+  const tile = (lbl, val, sub, c) => `<div class="sup-kpi"><div class="sup-kpi-l">${lbl}</div><div class="sup-kpi-v" style="${c ? 'color:' + c : ''}">${val}</div><div class="sup-kpi-s">${sub}</div></div>`;
+  document.getElementById('sup-kpi').innerHTML =
+    tile('하루 공급 상한', invShort(avg.cap), '실제 노출 + 남은 가용 · 지난 28일 평균') +
+    tile('하루 실제 노출', invShort(avg.imps), `슬롯 fill rate ${supPct(avg.fill)}`) +
+    tile('하루 남는 가용', invShort(avg.avail), '빈 슬롯 × 계수 · 신규로 더 받을 수 있는 양') +
+    tile('앞으로 4주 하루 수요', platAll ? (demOk ? invShort(need28) : '…') : '—', platAll ? '청약 · 실소진 기준 중 큰 쪽' : '수요는 플랫폼을 나눌 수 없어 통합에서만 보여요') +
+    tile('수요 ÷ 공급 상한', supPct(use), use === null ? '통합 · 수요 로딩 후 계산' : use <= 0.8 ? '여유 있어요' : use <= 0.95 ? '빠듯해요' : '공급보다 수요가 많아요', useC) +
+    tile('Moloco 대비', molAvail ? supPct(avg.avail / molAvail) : '—', molAvail ? `Moloco 하루 가용 ${invShort(molAvail)} (계수 ${molCoef})` : SUP.mol ? '같은 기간 Moloco 데이터 없음' : 'Moloco 시트 불러오는 중');
+
+  // ── 메인 그래프 ──
+  const el = document.getElementById('ch-sup-main');
+  if (el && typeof Chart !== 'undefined') {
+    if (SUP.charts.main) SUP.charts.main.destroy();
+    const all = past.concat(fut.filter(d => d > past[past.length - 1]));
+    const pd = d => daily[invISO(d)];
+    const demAll = all.map(d => d >= t ? dem[d - t] : (demOk && platAll ? supDemand(d) : null));
+    const ds = [
+      { type: 'bar', label: '실제 노출', data: all.map(d => pd(d) ? Math.round(pd(d).imps) : null), backgroundColor: 'rgba(37,99,235,.6)', stack: 's', barPercentage: 1, categoryPercentage: 0.9, order: 3 },
+      { type: 'bar', label: '남은 빈 자리 (가용)', data: all.map(d => pd(d) ? Math.round(pd(d).avail) : null), backgroundColor: 'rgba(16,185,129,.45)', stack: 's', barPercentage: 1, categoryPercentage: 0.9, order: 3 },
+      { type: 'line', label: '공급 상한 (요일 평균)', data: all.map(d => d >= t ? Math.round(capOf(d) || 0) : null), borderColor: '#059669', borderDash: [5, 4], borderWidth: 2, pointRadius: 0, order: 1 },
+    ];
+    if (platAll && demOk) {
+      ds.push({ type: 'line', label: '청약 수요', data: demAll.map(x => x ? Math.round(x.book) : null), borderColor: '#d97706', borderWidth: 2, pointRadius: 0, order: 0 });
+      ds.push({ type: 'line', label: '실소진 기준 필요', data: all.map((d, i) => d >= t && demAll[i] ? Math.round(demAll[i].pace) : null), borderColor: '#dc2626', borderDash: [2, 3], borderWidth: 2, pointRadius: 0, order: 0 });
+    }
+    SUP.charts.main = new Chart(el, { type: 'bar', data: { labels: all.map(d => invISO(d).slice(5) + (d === t ? ' 오늘' : '')), datasets: ds },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 }, color: '#6b7280' } }, tooltip: { filter: i => i.raw !== null, callbacks: { label: c => `${c.dataset.label}: ${invN(c.raw)}` } } },
+        scales: { x: { stacked: true, ticks: { maxTicksLimit: 14, font: { size: 10 }, color: '#6b7280' }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { font: { size: 10 }, color: '#6b7280', callback: v => invShort(v) }, grid: { color: 'rgba(0,0,0,.05)' } } } } });
+  }
+
+  // ── 앞으로 6주 ──
+  let wh = `<table class="inv-table"><thead><tr><th style="text-align:left">기간</th><th>공급 상한</th><th>청약 수요</th><th>실소진 기준 필요</th><th>수요 (큰 쪽)</th><th>수요 ÷ 공급</th><th>남는 하루 가용</th></tr></thead><tbody>`;
+  for (let w = 0; w < 6; w++) {
+    const ds2 = fut.slice(w * 7, w * 7 + 7), dd = dem.slice(w * 7, w * 7 + 7);
+    const cap = ds2.reduce((a, d) => a + (capOf(d) || 0), 0) / 7;
+    const bk = dd.reduce((a, x) => a + x.book, 0) / 7, pc = dd.reduce((a, x) => a + x.pace, 0) / 7, nd = dd.reduce((a, x) => a + Math.max(x.book, x.pace), 0) / 7;
+    const u = platAll && demOk && cap ? nd / cap : null;
+    const c = u === null ? '' : u <= 0.8 ? 'color:#16a34a' : u <= 0.95 ? 'color:#d97706' : 'color:var(--red)';
+    const dn = v => platAll && demOk ? invN(v) : '—';
+    wh += `<tr><td style="text-align:left">${invMD(ds2[0])}~${invMD(ds2[6])}</td><td class="num">${invN(cap)}</td><td class="num">${dn(bk)}</td><td class="num">${dn(pc)}</td><td class="num b">${dn(nd)}</td>
+      <td class="num b" style="${c}">${supPct(u)}</td><td class="num">${platAll && demOk ? invN(cap - nd) : '—'}</td></tr>`;
+  }
+  document.getElementById('sup-weeks').innerHTML = wh + `</tbody></table><div class="inv-hint" style="margin-top:6px">공급 상한은 지난 28일 같은 요일 평균이에요 · 80% 이하 여유 / 95%까지 빠듯 / 넘으면 부족 · TOP20 외 상품도 TOP20 콘텐츠 자리를 같이 쓸 수 있어서, 판단은 '영상 전체'로 먼저 보세요${platAll ? '' : ' · 플랫폼별로는 수요를 나눌 수 없어 공급만 보여요'}</div>`;
+
+  // ── 버킷 표 ──
+  const B = {};
+  A.cells.forEach(([slot, plat, gd, age, top, nf, ret, imps, pods]) => {
+    if (slot !== 'Non-KBO' && slot !== 'KBO') return;
+    const k = slot === 'KBO' ? 'KBO' : `${plat}|${top}`, o = B[k] || (B[k] = { slot, plat, top, nf: 0, ret: 0, imps: 0, pods: 0 });
+    o.nf += nf; o.ret += ret; o.imps += imps; o.pods += pods || 0;
+  });
+  const molB = {};
+  (SUP.mol ? SUP.mol.rows : []).forEach(([d, slot, plat, top, pods, served, nf]) => {
+    if (d < A.window.from || d > A.window.to || slot !== 'Non-KBO') return;
+    const k = `${plat}|${top}`, o = molB[k] || (molB[k] = { nf: 0, days: new Set() }); o.nf += Number(nf) || 0; o.days.add(d);
+  });
+  const D = A.window.days || 28;
+  const order = ['TVING|TOP20', 'TVING|non_TOP20', 'Wavve|TOP20', 'Wavve|non_TOP20'];
+  let bh = `<table class="inv-table"><thead><tr><th style="text-align:left">버킷</th><th>pod (광고 묶음)</th><th>채운 슬롯</th><th>빈 슬롯</th><th>fill rate</th><th>계수</th><th>실제 노출</th><th>남는 가용</th><th>공급 상한</th><th>Moloco 가용</th><th>Athena ÷ Moloco</th></tr></thead><tbody>`;
+  const tot = { pods: 0, ret: 0, nf: 0, imps: 0, av: 0, mav: 0 };
+  const row = (name, o, cf, mav, cls) => {
+    const av = o.nf * cf / D;
+    return `<tr class="${cls || ''}"><td style="text-align:left">${name}</td><td class="num">${invN(o.pods / D)}</td><td class="num">${invN(o.ret / D)}</td><td class="num">${invN(o.nf / D)}</td>
+      <td class="num">${supPct(o.ret + o.nf ? o.ret / (o.ret + o.nf) : null)}</td><td class="num">${cf === null ? '—' : cf.toFixed(3)}</td><td class="num">${invN(o.imps / D)}</td>
+      <td class="num b">${invN(av)}</td><td class="num">${invN(o.imps / D + av)}</td><td class="num">${mav === null ? '—' : invN(mav)}</td><td class="num">${mav ? supPct(av / mav) : '—'}</td></tr>`;
+  };
+  order.forEach(k => {
+    const o = B[k]; if (!o) return;
+    const [p, tp] = k.split('|'), cf = supCoef(p, tp), m = molB[k], mav = m && m.days.size ? m.nf * molCoef / m.days.size : null;
+    const on = supIn(p, tp);
+    bh += row(`${p} · ${tp === 'TOP20' ? 'TOP20' : 'TOP20 외'}${on ? '' : ' <span class="inv-tag">선택 밖</span>'}`, o, cf, mav, on ? '' : 'inv-zero');
+    if (on) { tot.pods += o.pods; tot.ret += o.ret; tot.nf += o.nf; tot.imps += o.imps; tot.av += o.nf * cf / D; if (mav) tot.mav += mav; }
+  });
+  bh += `<tr class="inv-total"><td style="text-align:left">선택 합계 (Non-KBO)</td><td class="num">${invN(tot.pods / D)}</td><td class="num">${invN(tot.ret / D)}</td><td class="num">${invN(tot.nf / D)}</td>
+    <td class="num">${supPct(tot.ret + tot.nf ? tot.ret / (tot.ret + tot.nf) : null)}</td><td class="num">${tot.ret ? (tot.imps / tot.ret).toFixed(3) : '—'}</td><td class="num">${invN(tot.imps / D)}</td>
+    <td class="num b">${invN(tot.av)}</td><td class="num">${invN(tot.imps / D + tot.av)}</td><td class="num">${tot.mav ? invN(tot.mav) : '—'}</td><td class="num">${tot.mav ? supPct(tot.av / tot.mav) : '—'}</td></tr>`;
+  if (B.KBO) { const cf = (A.coefBy && A.coefBy['KBO|TVING|non_TOP20']) || A.coef.KBO || 0; bh += row('KBO (참고 · 합계 제외)', B.KBO, cf, null, 'inv-zero'); }
+  document.getElementById('sup-buckets').innerHTML = bh + `</tbody></table><div class="inv-hint" style="margin-top:6px">하루 평균(${D}일) · 계수 = 노출 ÷ 채운 슬롯 (1.0 넘으면 1.0으로 잘라요) · Moloco 가용 = Moloco 빈 슬롯 × ${molCoef} (같은 기간)</div>`;
+
+  // ── 성연령 ──
+  const G = { '3': {}, '2': {}, unknown: {} }; let gt = 0;
+  A.cells.forEach(([slot, plat, gd, age, top, nf]) => {
+    if (slot !== 'Non-KBO' || !supIn(plat, top)) return;
+    const g = G[gd] ? gd : 'unknown', m = String(age).match(/^(\d+)_/), a = age === 'unknown' || !m ? 'unknown' : +m[1] >= 65 ? '65+' : age;
+    const v = nf * supCoef(plat, top) / D; G[g][a] = (G[g][a] || 0) + v; gt += v;
+  });
+  const mx = Math.max(1, ...Object.values(G).flatMap(o => Object.values(o)));
+  let gh = `<table class="inv-table"><thead><tr><th style="text-align:left">성별</th>${SUP_AGES.map(a => `<th>${a === 'unknown' ? '미상' : a.replace('_', '-')}</th>`).join('')}<th>합계</th><th>비중</th></tr></thead><tbody>`;
+  [['3', '여'], ['2', '남'], ['unknown', '미상']].forEach(([g, nm]) => {
+    const s = SUP_AGES.reduce((a, k) => a + (G[g][k] || 0), 0);
+    gh += `<tr><td style="text-align:left">${nm}</td>${SUP_AGES.map(k => { const v = G[g][k] || 0; return `<td class="num" style="background:rgba(16,185,129,${(v / mx * 0.5).toFixed(3)})">${v ? invShort(v) : '<span class="inv-zero">0</span>'}</td>`; }).join('')}<td class="num b">${invShort(s)}</td><td class="num">${supPct(gt ? s / gt : null)}</td></tr>`;
+  });
+  document.getElementById('sup-demo').innerHTML = gh + `</tbody></table><div class="inv-hint" style="margin-top:6px">하루 남는 가용 (빈 슬롯 × 계수 ÷ ${D}일) · 성연령 타겟 캠페인은 이 칸 안에서만 나가요 · 미상 칸은 성연령 타겟으로는 못 써요</div>`;
+
+  // ── Athena vs Moloco ──
+  const ce = document.getElementById('ch-sup-cmp');
+  const days = [...new Set(Object.keys(daily).concat(Object.keys(mol)))].sort().filter(d => d >= invISO(invToDay(A.window.to) - 59));
+  if (ce && typeof Chart !== 'undefined') {
+    if (SUP.charts.cmp) SUP.charts.cmp.destroy();
+    SUP.charts.cmp = new Chart(ce, { type: 'line', data: { labels: days.map(d => d.slice(5)), datasets: [
+      { label: 'Athena 빈 슬롯', data: days.map(d => daily[d] ? Math.round(daily[d].nf) : null), borderColor: '#059669', borderWidth: 2, pointRadius: 1.5, spanGaps: false },
+      { label: 'Moloco 빈 슬롯', data: days.map(d => mol[d] ? Math.round(mol[d].nf) : null), borderColor: '#7c3aed', borderWidth: 2, pointRadius: 1.5, spanGaps: false },
+      { label: 'Athena 실제 노출', data: days.map(d => daily[d] ? Math.round(daily[d].imps) : null), borderColor: 'rgba(37,99,235,.6)', borderDash: [4, 3], borderWidth: 1.5, pointRadius: 0 },
+      { label: 'Moloco 채운 슬롯', data: days.map(d => mol[d] ? Math.round(mol[d].served) : null), borderColor: 'rgba(124,58,237,.5)', borderDash: [4, 3], borderWidth: 1.5, pointRadius: 0 },
+    ] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 }, color: '#6b7280' } }, tooltip: { filter: i => i.raw !== null, callbacks: { label: c => `${c.dataset.label}: ${invN(c.raw)}` } } },
+      scales: { x: { ticks: { maxTicksLimit: 14, font: { size: 10 }, color: '#6b7280' }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 }, color: '#6b7280', callback: v => invShort(v) }, grid: { color: 'rgba(0,0,0,.05)' } } } } });
+  }
+  const both = days.filter(d => daily[d] && mol[d] && mol[d].nf);
+  const rs = both.map(d => daily[d].nf / mol[d].nf).sort((a, b) => a - b), med = rs.length ? rs[Math.floor(rs.length / 2)] : null;
+  const odd = both.filter(d => Math.abs(daily[d].nf / mol[d].nf - med) > 0.3 * med);
+  document.getElementById('sup-cmp-note').innerHTML = !SUP.mol ? (SUP.molErr ? `Moloco 시트를 읽지 못했어요: ${invEsc(SUP.molErr)}` : 'Moloco 시트 불러오는 중…')
+    : !both.length ? '겹치는 날짜가 없어요'
+    : `겹치는 ${both.length}일 기준 Athena 빈 슬롯 = Moloco의 <b>${supPct(med)}</b> (중앙값)` +
+      (odd.length ? ` · 비율이 30% 넘게 벗어난 날 <b>${odd.length}일</b>: ${odd.slice(0, 8).map(d => d.slice(5)).join(', ')}${odd.length > 8 ? ' …' : ''} — 이 날은 한쪽 집계를 의심해 보세요` : ' · 크게 벗어난 날은 없어요');
+
+  // 수요가 아직이면 잠깐 뒤 다시 그려요
+  if ((!INV.loaded || !(ST.rows && ST.rows.length)) && SUP.wait < 20) { SUP.wait++; clearTimeout(SUP.tm); SUP.tm = setTimeout(supRenderIfOn, 1500); }
+}
+</script>
 
 <div id="sec-slk" class="sec">
   <div class="card">
@@ -2261,6 +2568,7 @@ function go(id,el){
   if(id==='inventory') invOnShow();
   if(id==='pace') paceOnShow();
   if(id==='forecast') fcOnShow();
+  if(id==='supply') supOnShow();
   if(id==='ov') {
     requestAnimationFrame(() => window.scrollTo(0, _ovScrollY));
   } else {
@@ -8325,14 +8633,14 @@ function topRender() {
     K(`최근 ${r7.n}일 미소진`, fmt(r7.un), unRate === null ? '—' : `세팅의 ${(unRate * 100).toFixed(1)}% · 초과 소진과 상계하지 않은 값`, r7.un > 0 ? 'red' : '') +
     K('하루 최대 실제 소진', mx ? fmt(mx.v) : '—', mx ? `${invISO(mx.day)}(${invDOW(mx.day)}) · 지금까지 실제로 나간 최대` : '—') +
     K('앞으로 30일 부킹 최대', bMax ? fmt(bMax.v) : '—', bMax && mx ? `${invISO(bMax.day)}(${invDOW(bMax.day)}) · 하루 최대 실제 소진의 <b>${(bMax.v / mx.v * 100).toFixed(0)}%</b>` : '부킹 현황 데이터가 없어요', bMax && mx && bMax.v > mx.v ? 'red' : '');
-  // 그래프: 실제(막대) + 미소진(빨간 막대, 쌓기) + 세팅(선) + 부킹(점선, 앞으로 포함)
+  // 그래프: 실제(막대) + 미소진(빨간 막대, 쌓기) + 세팅(선) · 실적 있는 날까지만
   const el = document.getElementById('ch-top');
   if (el && typeof Chart !== 'undefined') {
     if (TOPT.chart) { TOPT.chart.destroy(); TOPT.chart = null; }
-    const first = TOPT.days.length ? TOPT.days[0].day : t, lastBook = TOPT.book.length ? TOPT.book[TOPT.book.length - 1].day : t;
-    const end = Math.max(TOPT.days.length ? TOPT.days[TOPT.days.length - 1].day : t, Math.min(lastBook, t + 30));
+    const first = TOPT.days.length ? TOPT.days[0].day : t;
+    const end = TOPT.days.length ? TOPT.days[TOPT.days.length - 1].day : t;
     const days = []; for (let d = first; d <= end; d++) days.push(d);
-    const dm = {}; TOPT.days.forEach(o => { dm[o.day] = o; }); const bm = {}; TOPT.book.forEach(b => { bm[b.day] = b; });
+    const dm = {}; TOPT.days.forEach(o => { dm[o.day] = o; });
     const g = (d, f) => { const o = dm[d] && dm[d][kind]; return o && o.has ? f(o[seg]) : null; };
     TOPT.chart = new Chart(el, {
       data: { labels: days.map(d => `${invMD(d)}(${invDOW(d)})`), datasets: [
@@ -8340,7 +8648,6 @@ function topRender() {
         { type: 'bar', label: '초과 소진', data: days.map(d => g(d, x => Math.max(0, x.act - x.set))), backgroundColor: '#93c5fd', stack: 's', order: 3 },
         { type: 'bar', label: '미소진', data: days.map(d => g(d, x => x.un)), backgroundColor: '#e8112d', stack: 's', order: 3 },
         { type: 'line', label: '세팅 일예산', data: days.map(d => { const o = dm[d] && dm[d][kind]; return o ? o[seg].set || null : null; }), borderColor: '#111827', borderWidth: 2, pointRadius: 0, fill: false, order: 1 },
-        { type: 'line', label: '부킹 필요 (청약 기준)', data: days.map(d => bm[d] ? bm[d][seg][kind] : null), borderColor: '#d97706', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 2 },
       ] },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -8498,7 +8805,9 @@ function paceRenderDemo() {
 //   수요: 같은 상품의 청약(운영마스터) · 실소진 남은 필요량(캠페인 현황) — 보너스 포함
 //   판정: 신규 하루 필요(15초 환산) ÷ 여유(공급 − 늘어날 기존 수요) → 20% 이하 진행 / 35% 이하 검토 / 초과 어려움
 // ════════════════════════════════════════════════════════
-const FC = { supply: null, loading: null, err: '', last: null };
+const FC = { supply: null, loading: null, err: '', last: null, src: 'moloco' };
+try { if (localStorage.getItem('fc_src') === 'athena') FC.src = 'athena'; } catch (e) { /* 기본 Moloco */ }
+function fcSetSrc(v) { FC.src = v; try { localStorage.setItem('fc_src', v); } catch (e) { /* 저장 없이 */ } FC.supply = null; FC.err = ''; FC.loading = null; fcLoadSupply(false); }
 const FC_OK = 0.20, FC_WARN = 0.35, FC_DEMO_RATE = 0.5;
 const FC_NV_OK = 0.80, FC_NV_WARN = 1.00;   // 비영상: (기존 수요 + 신규) ÷ 실제 최대 일 노출
 const FC_PRODUCTS = ['TOP20', '베이직인스트림', '시청데모', 'Prime time', 'CTV Premier'];
@@ -8506,11 +8815,11 @@ const FC_PRODUCTS = ['TOP20', '베이직인스트림', '시청데모', 'Prime ti
 function fcLoadSupply(force) {
   if (FC.loading && !force) return FC.loading;
   const meta = document.getElementById('fc-meta');
-  if (meta) meta.textContent = '⏳ TVING Inventory 빈 슬롯 집계를 불러오는 중… (처음 한 번은 10~30초 걸려요)';
+  if (meta) meta.textContent = FC.src === 'athena' ? '⏳ Athena 공급(공급_Athena 탭)을 불러오는 중…' : '⏳ TVING Inventory 빈 슬롯 집계를 불러오는 중… (처음 한 번은 10~30초 걸려요)';
   FC.loading = new Promise(res => {
     if (!(window.google && google.script && google.script.run)) { FC.err = 'Apps Script 웹앱에서만 불러올 수 있어요'; fcRenderMeta(); return res(); }
     google.script.run.withSuccessHandler(d => { FC.supply = d; FC.err = ''; fcRenderMeta(); res(); if (FC.last) fcRun(); })
-      .withFailureHandler(e => { FC.err = (e && e.message) || String(e); fcRenderMeta(); res(); }).getSupplyCube(!!force);
+      .withFailureHandler(e => { FC.err = (e && e.message) || String(e); fcRenderMeta(); res(); })[FC.src === 'athena' ? 'getSupplyAthena' : 'getSupplyCube'](!!force);
   });
   return FC.loading;
 }
@@ -8518,10 +8827,11 @@ function fcRenderMeta() {
   const el = document.getElementById('fc-meta'); if (!el) return;
   const S = FC.supply;
   el.innerHTML = S
-    ? `<b>공급</b> TVING Inventory 빈 슬롯(No-fill) · 기준 창 <b>${invEsc(S.window.from)} ~ ${invEsc(S.window.to)}</b> (${S.window.days}일) · 보정계수 Non-KBO <b>${S.coef['Non-KBO']}</b> · 계산 ${invTime(S.builtAt)}<br>` +
+    ? `<b>공급</b> ${S.source === 'athena' ? 'Athena 광고 요청 로그 빈 슬롯' : 'TVING Inventory 빈 슬롯(No-fill)'} · 기준 창 <b>${invEsc(S.window.from)} ~ ${invEsc(S.window.to)}</b> (${S.window.days}일) · ${S.coefBy ? '계수 버킷별 실측 (Non-KBO 평균 <b>' + Number(S.coef['Non-KBO']).toFixed(2) + '</b>)' : `보정계수 Non-KBO <b>${S.coef['Non-KBO']}</b>`} · 계산 ${invTime(S.builtAt)}<br>` +
       `<b>수요</b> 운영마스터파일 청약${INV.loaded ? ` (${invTime(INV.meta.fetchedAt)})` : ' (불러오는 중)'} · 캠페인 현황 실소진${ST.rows && ST.rows.length ? ` (${invEsc(ST.lastUpdated || '')})` : ' (불러오는 중)'} · 보너스 포함`
     : FC.err ? `<span style="color:var(--red)">공급 데이터를 불러오지 못했어요: ${invEsc(FC.err)}</span> — TVING Inventory 시트 열람 권한과 Supply.gs 배포를 확인해 주세요`
     : '공급 데이터를 기다리는 중…';
+  el.innerHTML += `<div style="margin-top:6px">공급 기준 <span class="inv-seg"><button class="${FC.src === 'moloco' ? 'on' : ''}" onclick="fcSetSrc('moloco')">Moloco 시트</button><button class="${FC.src === 'athena' ? 'on' : ''}" onclick="fcSetSrc('athena')">Athena (요청 로그)</button></span> <span class="inv-hint">두 기준으로 판정해 보고 차이를 비교해 보세요 · Athena 쪽이 빈 자리를 더 보수적으로 세요</span></div>`;
 }
 async function fcOnShow() {
   await shareLoad();
@@ -8573,7 +8883,7 @@ function fcExplain(sc) {
   const vid = [
     ['판정 · 소화율', '소화율 = 신규 하루 필요 ÷ 여유. 남는 자리 중 이번 캠페인이 몇 %를 가져가야 하는지예요. 빈 슬롯은 시간대 · 프로그램 · 유저에 흩어져 있어서 전부 쓸 수는 없기 때문에 기준을 낮게 잡았어요: <b>20% 이하 ✅ 진행</b> · <b>20~35% ⚠️ 검토</b> · <b>35% 초과 ❌ 어려움</b>.'],
     ['신규 하루 필요 (15초 환산)', '예산 ÷ CPM × 1,000 = 총 노출, 이걸 기간 일수로 나눈 값이에요. 30초 소재는 15초 자리 2개를 차지해서 × 2로 세요.'],
-    ['하루 가용 (빈 슬롯)', 'TVING Inventory 시트에서 최근 60일 동안 광고를 못 채우고 빈 채로 나간 슬롯(No-fill) 중 조건(Non-KBO · 플랫폼 · Top20 지면 · 성별 · 연령)에 맞는 것을 더하고, 보정계수(Non-KBO 0.89 — 빈 슬롯이 실제 노출로 이어지는 비율)를 곱해 60일로 나눠요. <b>지금 집행 중인 캠페인이 다 쓰고 남은 자리</b>예요. 성연령 타겟이면 수신 동의 유저에게만 나가서 × 50%만 써요.'],
+    ['하루 가용 (빈 슬롯)', (FC.src === 'athena' ? 'Athena 광고 요청 로그에서 최근 28일 동안 광고를 못 채운 슬롯 중 조건(Non-KBO · 플랫폼 · Top20 지면 · 성별 · 연령)에 맞는 것을 더하고, 버킷별 실측 계수(노출 ÷ 채운 슬롯, 0.93~1.0)를 곱해 28일로 나눠요. ' : 'TVING Inventory 시트에서 최근 60일 동안 광고를 못 채우고 빈 채로 나간 슬롯(No-fill) 중 조건(Non-KBO · 플랫폼 · Top20 지면 · 성별 · 연령)에 맞는 것을 더하고, 보정계수(Non-KBO 0.89 — 빈 슬롯이 실제 노출로 이어지는 비율)를 곱해 60일로 나눠요. ') + '<b>지금 집행 중인 캠페인이 다 쓰고 남은 자리</b>예요. 성연령 타겟이면 수신 동의 유저에게만 나가서 × 50%만 써요.'],
     ['늘어날 기존 수요', '빈 슬롯은 이미 지금 집행분을 뺀 값이라, 기존 캠페인이 <b>지금보다 더 가져갈 만큼</b>만 빼요. = 기간 중 기존 수요(같은 상품 캠페인이 그 기간에 하루 필요한 노출, 청약 · 실소진 중 큰 값, 보너스 포함) − 지금 하루 실집행. 예: 기간 중 기존 수요 8만, 지금 실집행 5만이면 3만이 늘어나요.'],
     ['여유', '하루 가용 − 늘어날 기존 수요. 예: 하루 가용 10만 − 늘어날 기존 수요 3만 = <b>7만</b>. 이번 캠페인이 쓸 수 있는 하루 자리예요.'],
   ];
@@ -8616,7 +8926,7 @@ function fcRun() {
   // ① 공급 (빈 슬롯 일평균)
   let supply = null, supplyRaw = null;
   if (FC.supply && !sc.nonVid) {
-    const R = fcDemoRange(sc.dm), coef = FC.supply.coef['Non-KBO'] || 0.89;
+    const R = fcDemoRange(sc.dm), coef = FC.supply.coef['Non-KBO'] || 0.89, cBy = FC.supply.coefBy;
     let nf = 0;
     FC.supply.cells.forEach(([slot, plat, gd, age, top, nofill]) => {
       if (slot !== 'Non-KBO') return;
@@ -8627,9 +8937,10 @@ function fcRun() {
         const m = String(age).match(/^(\d{1,2})_(\d{0,2})/); if (!m) return;
         const lo = +m[1], hi = m[2] ? +m[2] : 99; if (lo < R.lo || hi > R.hi) return;
       }
-      nf += Number(nofill) || 0;
+      const cf = cBy && cBy[`Non-KBO|${plat}|${top}`] !== undefined ? cBy[`Non-KBO|${plat}|${top}`] : coef;
+      nf += (Number(nofill) || 0) * cf;
     });
-    supplyRaw = nf * coef / FC.supply.window.days;
+    supplyRaw = nf / FC.supply.window.days;
     supply = supplyRaw * (sc.dm ? FC_DEMO_RATE : 1);
   }
 
@@ -8745,7 +9056,7 @@ function fcRun() {
     ${K('한도 사용률', nv ? (nv.use === Infinity ? '—' : (nv.use * 100).toFixed(1) + '%') : '—', nv ? `(기존 ${invN(demandDay)} + 신규 ${invN(needDay)}) ÷ 한도 ${invN(nv.cap)}` : '하루 한도가 있어야 계산해요', nv && nv.use > FC_NV_WARN ? 'red' : '')}`
     : `
     ${K('신규 하루 필요 (15초 환산)', invN(needSlot), `예산 ÷ CPM × 1,000 = 총 ${invN(need)} 노출 ÷ ${days}일${w > 1 ? ' × 2 (30초는 15초 자리 2개)' : ''}`)}
-    ${K('하루 가용 (빈 슬롯)', supply === null ? '—' : invN(supply), supply === null ? '공급 데이터를 불러오는 중' : `최근 60일 빈 슬롯 × 보정계수 ÷ 60일 = ${invN(supplyRaw)}${sc.dm ? ' × 50% (성연령 타겟 가능분)' : ''} · 지금 집행이 쓰고 남은 자리`)}
+    ${K('하루 가용 (빈 슬롯)', supply === null ? '—' : invN(supply), supply === null ? '공급 데이터를 불러오는 중' : `최근 ${FC.supply.window.days}일 빈 슬롯 × ${FC.supply.coefBy ? '버킷별 계수' : '보정계수'} ÷ ${FC.supply.window.days}일 = ${invN(supplyRaw)}${sc.dm ? ' × 50% (성연령 타겟 가능분)' : ''} · 지금 집행이 쓰고 남은 자리`)}
     ${K('늘어날 기존 수요', invN(growth), `기간 중 기존 수요 ${invN(demandDay)} − 지금 실집행 ${invN(curDay)} · 기존 수요는 청약 ${invN(bookDay)} / 실소진 ${invN(paceDay)} 중 큰 값`)}
     ${K('여유', room === null ? '—' : invN(room), room === null ? '하루 가용 − 늘어날 기존 수요' : `하루 가용 ${invN(supply)} − 늘어날 기존 수요 ${invN(growth)}`, room !== null && room <= 0 ? 'red' : '')}`}
   </div>`;
@@ -8778,7 +9089,7 @@ function fcRun() {
       <div class="inv-hint" style="margin-bottom:6px">막대 = 그날 실제로 나간 노출 · 주황 점선 = 이번 기간에 필요한 하루 노출 (기존 수요 + 신규)${nv ? ' · 빨간 점선 = 하루 한도' : ''} · 점선이 평소 막대보다 훨씬 높으면 지금까지 낸 적 없는 양이에요</div>
       <div style="position:relative;height:220px"><canvas id="ch-fc-hist"></canvas></div></div>`;
   h += `<div class="card"><div class="card-title">📐 계산 방법과 전제</div><div class="inv-hint" style="line-height:1.9">
-    · <b>하루 가용</b> = 타겟 조건(구좌 Non-KBO · 플랫폼 · ${sc.top20 ? 'Top20 지면 · ' : ''}성별 · 연령)에 맞는 최근 60일 빈 슬롯 합 × 보정계수 ÷ 60일 — TVING Inventory 🎛 Simulator · 🧮 조합 계산기와 같은 계산이에요. 빈 슬롯만 세고 하우스 자리는 빼서 보수적이에요<br>
+    · <b>하루 가용</b> = 타겟 조건(구좌 Non-KBO · 플랫폼 · ${sc.top20 ? 'Top20 지면 · ' : ''}성별 · 연령)에 맞는 최근 ${FC.supply ? FC.supply.window.days : 60}일 빈 슬롯 합 × ${FC.supply && FC.supply.coefBy ? '버킷별 실측 계수' : '보정계수'} ÷ 일수 — ${FC.src === 'athena' ? '공급 기준 Athena(요청 로그) · 🏭 공급 · 수요 탭과 같은 숫자예요.' : 'TVING Inventory 🎛 Simulator · 🧮 조합 계산기와 같은 계산이에요.'} 빈 슬롯만 세고 하우스 자리는 빼서 보수적이에요<br>
     · 성연령 타겟은 해당 성연령 수신 동의 유저에게만 나가서 가용의 <b>50%</b>만 타겟 가능으로 봐요<br>
     · <b>늘어날 기존 수요</b> = 이 기간에 같은 상품 캠페인이 필요로 하는 하루 노출(청약·실소진 중 큰 값, 보너스 포함) − 지금 하루 실집행. 빈 슬롯은 이미 지금 집행을 뺀 값이라, 그보다 늘어나는 만큼만 빼요<br>
     · 다른 성연령을 노리는 캠페인은 겹치는 칸 비율만큼만 세요 (성연령 없는 캠페인은 상품의 실제 성연령 비율로)<br>
@@ -9420,6 +9731,7 @@ function tasRefreshAll(manual) {
   if (typeof invHasLive === 'function' && invHasLive()) shareLoad(true).then(() => invLoad(!!manual));
   if (typeof DACT !== 'undefined' && (DACT.loaded || DACT.err)) { DACT.err = ''; dactLoad(true); }
   if (typeof TOPT !== 'undefined' && (TOPT.loaded || TOPT.err)) { TOPT.err = ''; topLoad(true); }
+  if (typeof SUP !== 'undefined' && (SUP.ath || SUP.err)) { SUP.err = ''; SUP.loading = null; supLoad(false); }
 }
 function tasCheckSlot() { if (tasLastSlot(Date.now()) > TAS.lastRun) tasRefreshAll(false); }
 function tasSlotStart() {
@@ -9458,14 +9770,15 @@ async function tasResetView() {
   const tabBtn = id => document.querySelector(`.tab[onclick*="go('${id}'"]`);
   const guide = document.getElementById('sec-guide');
   const guideCard = guide && guide.querySelector('.card');
-  const INV_GUIDES = ['guide-inv', 'guide-slot', 'guide-pace', 'guide-fc', 'guide-ovr'];
+  const INV_GUIDES = ['guide-inv', 'guide-slot', 'guide-pace', 'guide-fc', 'guide-sup', 'guide-ovr'];
   const mk = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
 
   if (!inv) {
     // ── 캠페인 모니터링: 두 탭은 빼고 새 페이지 링크만 ──
-    const b1 = tabBtn('inventory'), b2 = tabBtn('pace'), b3 = tabBtn('forecast');
+    const b1 = tabBtn('inventory'), b2 = tabBtn('pace'), b3 = tabBtn('forecast'), b4 = tabBtn('supply');
     if (b2) b2.style.display = 'none';
     if (b3) b3.style.display = 'none';
+    if (b4) b4.style.display = 'none';
     if (b1) {
       b1.style.display = 'none';
       const a = mk(`<a class="tab" target="_blank" rel="noopener" title="새 탭에서 열려요 · 매일 10:00·16:00 자동 갱신" style="text-decoration:none">📦 인벤토리 모니터링 ↗</a>`);
@@ -9475,7 +9788,7 @@ async function tasResetView() {
     if (guideCard) {
       INV_GUIDES.forEach(id => { const d = document.getElementById(id); if (d) d.style.display = 'none'; });
       const note = mk(`<div style="margin-bottom:12px;padding:10px 14px;border:1px solid var(--blue-border);background:var(--blue-bg);border-radius:8px;font-size:12px;color:var(--blue-text);line-height:1.8">
-        📦 <b>상품별 인벤토리 현황</b> · 📈 <b>실소진 기반 인벤토리</b> · 🔮 <b>소진 예측</b>은 별도 페이지에 있어요.
+        📦 <b>상품별 인벤토리 현황</b> · 📈 <b>실소진 기반 인벤토리</b> · 🔮 <b>소진 예측</b> · 🏭 <b>공급 · 수요</b>는 별도 페이지에 있어요.
         <a target="_blank" rel="noopener" style="font-weight:700">인벤토리 모니터링 열기 ↗</a> — 두 탭의 보는 방법도 그 페이지의 📖 사용 가이드에 있어요.</div>`);
       note.querySelector('a').href = invUrl;
       const title = guideCard.querySelector('.card-title');
@@ -9499,7 +9812,7 @@ async function tasResetView() {
   }
 
   // 탭: 두 개 + 사용 가이드만 보여요 (다른 탭은 숨기기만 해요 · 배지 숫자 등을 쓰는 코드가 그대로 돌 수 있게)
-  const keep = ['inventory', 'pace', 'forecast', 'guide'];
+  const keep = ['inventory', 'pace', 'forecast', 'supply', 'guide'];
   const invBtn = tabBtn('inventory'), guideBtn = tabBtn('guide');
   document.querySelectorAll('.tabs-wrap .tab').forEach(b => {
     if (!keep.some(id => (b.getAttribute('onclick') || '').includes(`go('${id}'`))) b.style.display = 'none';
