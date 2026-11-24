@@ -1943,6 +1943,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg inv-metric-seg" id="inv-metric">
         <button data-v="imps" onclick="invSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="invSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="invSetMetric('amt')" title="청약금액 ÷ 집행일수 (노출량을 계산할 수 있는 청약만)">금액</button>
       </div>
     </div>
     <div class="inv-ctrl">
@@ -1969,6 +1970,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg inv-metric-seg" title="그래프·표·히트맵을 어떤 기준으로 볼지">
         <button data-v="imps" onclick="invSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="invSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="invSetMetric('amt')" title="청약금액 ÷ 집행일수 (노출량을 계산할 수 있는 청약만)">금액</button>
       </div></div>
       <span class="inv-hint">막대를 누르면 그날 집행 캠페인이 아래에 나와요 · <span style="color:#e8112d">빨간 날짜</span> 오늘 · <span style="color:#2563eb">파란 날짜</span> 주말</span>
     </div>
@@ -1980,6 +1982,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg inv-metric-seg" title="그래프·표·히트맵을 어떤 기준으로 볼지">
         <button data-v="imps" onclick="invSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="invSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="invSetMetric('amt')" title="청약금액 ÷ 집행일수 (노출량을 계산할 수 있는 청약만)">금액</button>
       </div></div>
     <div class="tbl-wrap inv-tbl-wrap" id="inv-table"></div>
     <div class="inv-legend" id="inv-legend"></div>
@@ -2061,6 +2064,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg pc-metric-seg" id="pc-metric">
         <button data-v="imps" onclick="paceSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="paceSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="paceSetMetric('amt')" title="필요 노출 × CPM(과금단가) ÷ 1,000">금액</button>
       </div>
     </div>
     <div class="inv-ctrl">
@@ -2101,6 +2105,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg pc-metric-seg" title="그래프·표·히트맵을 어떤 기준으로 볼지">
         <button data-v="imps" onclick="paceSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="paceSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="paceSetMetric('amt')" title="필요 노출 × CPM(과금단가) ÷ 1,000">금액</button>
       </div></div>
       <span class="inv-hint">막대를 누르면 그날 캠페인이 아래에 나와요 · 점선 = 계획 기준(균등)</span>
     </div>
@@ -2112,6 +2117,7 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
       <div class="inv-seg pc-metric-seg" title="그래프·표·히트맵을 어떤 기준으로 볼지">
         <button data-v="imps" onclick="paceSetMetric('imps')">노출 기준</button>
         <button data-v="slot" onclick="paceSetMetric('slot')">15초 환산</button>
+        <button data-v="amt" onclick="paceSetMetric('amt')" title="필요 노출 × CPM(과금단가) ÷ 1,000">금액</button>
       </div></div>
     <div class="tbl-wrap inv-tbl-wrap" id="pc-table"></div>
   </div>
@@ -2226,6 +2232,32 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
     <div id="sup-cmp-note" style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.8"></div>
   </div>
 </div>
+
+
+<div id="sec-slk" class="sec">
+  <div class="card">
+    <div class="card-title">Slack Webhook 설정</div>
+    <div class="ibox">Slack 앱 → Incoming Webhooks → Add New Webhook to Workspace → 채널 선택 → URL 복사 후 입력</div>
+    <div class="fg"><label>Webhook URL</label><input type="url" id="slk-url" placeholder="https://hooks.slack.com/services/..."></div>
+    <div class="fg"><label>알럿 채널</label><input type="text" id="slk-ch" value="#ad-monitoring"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-primary" onclick="saveSlack()">저장</button><button class="btn" onclick="testSlack()">테스트 전송</button></div>
+    <div id="slk-msg" style="font-size:12px;color:var(--text3)"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">전송 스케줄</div>
+      <button class="btn btn-primary" onclick="addSchd()">+ 추가</button>
+    </div>
+    <div class="wbox">지정 시간마다 요약 리포트 자동 전송. 이상 감지 즉시 전송은 별도로 항상 작동합니다.</div>
+    <div id="schd-list"><div class="empty" id="schd-empty">스케줄 없음</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">메시지 미리보기</div>
+    <div class="preview-box" id="slk-preview">샘플 데이터를 불러오면 미리보기가 표시됩니다.</div>
+  </div>
+</div>
+
+</div><!-- /main -->
 
 <script>
 // ════════════════════════════════════════════════════════
@@ -2465,31 +2497,6 @@ function supRender() {
   if ((!INV.loaded || !(ST.rows && ST.rows.length)) && SUP.wait < 20) { SUP.wait++; clearTimeout(SUP.tm); SUP.tm = setTimeout(supRenderIfOn, 1500); }
 }
 </script>
-
-<div id="sec-slk" class="sec">
-  <div class="card">
-    <div class="card-title">Slack Webhook 설정</div>
-    <div class="ibox">Slack 앱 → Incoming Webhooks → Add New Webhook to Workspace → 채널 선택 → URL 복사 후 입력</div>
-    <div class="fg"><label>Webhook URL</label><input type="url" id="slk-url" placeholder="https://hooks.slack.com/services/..."></div>
-    <div class="fg"><label>알럿 채널</label><input type="text" id="slk-ch" value="#ad-monitoring"></div>
-    <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-primary" onclick="saveSlack()">저장</button><button class="btn" onclick="testSlack()">테스트 전송</button></div>
-    <div id="slk-msg" style="font-size:12px;color:var(--text3)"></div>
-  </div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="card-title" style="margin-bottom:0">전송 스케줄</div>
-      <button class="btn btn-primary" onclick="addSchd()">+ 추가</button>
-    </div>
-    <div class="wbox">지정 시간마다 요약 리포트 자동 전송. 이상 감지 즉시 전송은 별도로 항상 작동합니다.</div>
-    <div id="schd-list"><div class="empty" id="schd-empty">스케줄 없음</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">메시지 미리보기</div>
-    <div class="preview-box" id="slk-preview">샘플 데이터를 불러오면 미리보기가 표시됩니다.</div>
-  </div>
-</div>
-
-</div><!-- /main -->
 
 <script>
 const ST={rows:[],alerts:[],schedules:[{id:1,time:'09:00'},{id:2,time:'18:00'}],slack:{url:'',ch:'#ad-monitoring',connected:false},lastUpdated:'',sortMode:null,colSort:{key:null,dir:1},dateCols:[],rawArr:[],mode:'afternoon'};
@@ -8097,7 +8104,14 @@ function invColor(k) {
   if (!INV.colorMap[k]) INV.colorMap[k] = INV_CFG.PALETTE[Object.keys(INV.colorMap).length % INV_CFG.PALETTE.length];
   return INV.colorMap[k];
 }
-const invVal = r => r.daily * (INV.metric === 'slot' ? invWeight(r.sec) : 1);
+const invAmtDaily = r => r.days ? (r.amt || 0) / r.days : 0;     // 하루 청약금액 (청약금액 ÷ 집행일수)
+const invVal = r => INV.metric === 'amt' ? invAmtDaily(r) : r.daily * (INV.metric === 'slot' ? invWeight(r.sec) : 1);
+// 지표에 맞는 숫자 모양 · 단위 (금액이면 ₩)
+const invUnitOf = m => ({ imps: '노출', slot: '15초 환산 노출', amt: '금액' })[m] || '노출';
+const invFmt = (m, v) => m === 'amt' ? invW(v) : invN(v);
+const invFmtS = (m, v) => (m === 'amt' ? '₩' : '') + invShort(v);
+// 표 오른쪽에 같이 보여줄 다른 단위 (금액으로 볼 땐 노출, 노출로 볼 땐 금액)
+const invAltOf = m => m === 'amt' ? 'imps' : 'amt';
 
 // ════════════════════════════════════════════════════════
 // 집계
@@ -8105,7 +8119,7 @@ const invVal = r => r.daily * (INV.metric === 'slot' ? invWeight(r.sec) : 1);
 function invAggregate() {
   const days = [];
   for (let d = INV.from; d <= INV.to; d++) days.push(d);
-  const n = days.length, map = {}, tot = new Array(n).fill(0);
+  const n = days.length, map = {}, tot = new Array(n).fill(0), alt = {};
   invFiltered().forEach(r => {
     if (!r.daily) return;
     const v = invVal(r);
@@ -8115,6 +8129,8 @@ function invAggregate() {
     if (a > b) return;
     const arr = map[k] || (map[k] = new Array(n).fill(0));
     for (let d = a; d <= b; d++) { arr[d - INV.from] += v; tot[d - INV.from] += v; }
+    const av = invAltOf(INV.metric) === 'amt' ? invAmtDaily(r) : r.daily;
+    alt[k] = (alt[k] || 0) + av * (b - a + 1);
   });
   let keys = Object.keys(map);
   if (INV.dim === 'sec') keys.sort((a, b) => {
@@ -8125,15 +8141,15 @@ function invAggregate() {
   else keys.sort((a, b) => map[b].reduce((s, v) => s + v, 0) - map[a].reduce((s, v) => s + v, 0));
   const active = tot.filter(v => v > 0);
   const avg = active.length ? active.reduce((s, v) => s + v, 0) / active.length : 0;
-  return { days, map, keys, tot, avg };
+  return { days, map, keys, tot, avg, alt };
 }
 
 function invDayStats(d) {
-  const st = { imps: 0, video: 0, nonvideo: 0, slot: 0, imps30: 0, slot30: 0, camps: 0, by: {} };
+  const st = { imps: 0, video: 0, nonvideo: 0, slot: 0, imps30: 0, slot30: 0, camps: 0, amt: 0, by: {} };
   invFiltered().forEach(r => {
     if (!r.daily || r.start > d || r.end < d) return;
     const w = invWeight(r.sec);
-    st.camps++; st.imps += r.daily; st.slot += r.daily * w;
+    st.camps++; st.imps += r.daily; st.slot += r.daily * w; st.amt += invAmtDaily(r);
     if (r.sec === '비영상') st.nonvideo += r.daily; else st.video += r.daily;
     if (r.sec === '30초') { st.imps30 += r.daily; st.slot30 += r.daily * w; }
     if (r.sec !== '비영상') {
@@ -8174,18 +8190,18 @@ function invRenderPva() {
   const by = {};
   INV.rows.forEach(r => {
     if (!r.order || !shown.has(r.order) || r.ovr === 'exclude') return;
-    const o = by[r.order] || (by[r.order] = { order: r.order, adv: r.adv, brand: r.brand, start: r.start, end: r.end, plan: 0, planY: 0, noImps: 0, rows: 0, bigs: new Set() });
+    const o = by[r.order] || (by[r.order] = { order: r.order, adv: r.adv, brand: r.brand, start: r.start, end: r.end, plan: 0, planY: 0, amt: 0, amtY: 0, noImps: 0, rows: 0, bigs: new Set() });
     o.rows++; o.bigs.add(r.big);
     if (r.start !== null && (o.start === null || r.start < o.start)) o.start = r.start;
     if (r.end !== null && (o.end === null || r.end > o.end)) o.end = r.end;
     if (!r.daily) { o.noImps++; return; }
-    o.plan += r.imps;
+    o.plan += r.imps; o.amt += r.amt || 0;
     const el2 = Math.min(r.end, yd) - r.start + 1;
-    if (el2 > 0) o.planY += r.daily * el2;
+    if (el2 > 0) { o.planY += r.daily * el2; o.amtY += invAmtDaily(r) * el2; }
   });
   const list = Object.values(by).filter(o => o.planY > 0).map(o => {
     const a = DACT.ord[o.order];
-    o.act = a ? a.imps : 0; o.found = !!a; o.ratio = o.planY ? o.act / o.planY : null; o.gap = o.act - o.planY;
+    o.act = a ? a.imps : 0; o.actAmt = a ? a.spend : 0; o.found = !!a; o.ratio = o.planY ? o.act / o.planY : null; o.gap = o.act - o.planY;
     return o;
   }).sort((a, b) => a.gap - b.gap);
   if (!list.length) { el.innerHTML = '<div class="empty" style="padding:1rem">이 필터에서 어제까지 집행됐어야 할 주문이 없어요</div>'; sumEl.textContent = ''; return; }
@@ -8195,14 +8211,14 @@ function invRenderPva() {
     ` · 90% 미만 <b style="color:var(--red)">${behind}개</b>${miss ? ` · TAS에서 못 찾은 주문 ${miss}개` : ''} · 부족한 순으로 정렬`;
   const badge = o => !o.found ? '<span class="inv-tag">TAS 없음</span>' : o.ratio >= 1 ? '<span class="inv-tag n">달성</span>' : o.ratio >= 0.9 ? '<span class="inv-tag pre">조금 부족</span>' : '<span class="inv-tag" style="background:var(--red-bg);color:var(--red-text)">부족</span>';
   let h = `<table class="inv-table"><thead><tr><th class="inv-stick">광고주 · 브랜드</th><th style="text-align:left">상품</th><th>기간</th>
-    <th title="운영마스터파일 총 예상 노출 합계">계획 총 노출</th><th title="하루 필요 노출 × 어제까지 지난 일수">어제까지 계획</th><th title="TAS 리포트 · 같은 주문ID · 어제까지">어제까지 실집행</th>
+    <th title="운영마스터파일 청약금액 합계">청약금액</th><th title="운영마스터파일 총 예상 노출 합계">계획 총 노출</th><th title="하루 청약금액 × 어제까지 지난 일수">어제까지 계획 금액</th><th title="하루 필요 노출 × 어제까지 지난 일수">어제까지 계획</th><th title="TAS 리포트 · 같은 주문ID · 어제까지 집행금액">어제까지 집행금액</th><th title="TAS 리포트 · 같은 주문ID · 어제까지">어제까지 실집행</th>
     <th>실집행 ÷ 계획</th><th>차이</th><th>판정</th><th style="text-align:left">주문ID</th></tr></thead><tbody>`;
   list.slice(0, 60).forEach(o => {
     h += `<tr><td class="inv-stick" title="${invEsc(o.adv + ' · ' + o.brand)}">${invEsc(o.adv)} <span style="color:var(--text3)">· ${invEsc(o.brand)}</span></td>
       <td style="color:var(--text2)">${invEsc([...o.bigs].join(', '))}</td>
       <td class="num">${o.start !== null ? invMD(o.start) : '?'}~${o.end !== null ? invMD(o.end) : '?'}</td>
-      <td class="num">${invN(o.plan)}${o.noImps ? ` <span class="inv-hint" title="CPM 누락 등으로 계획 노출을 모르는 행">+${o.noImps}행 미상</span>` : ''}</td>
-      <td class="num">${invN(o.planY)}</td><td class="num b">${o.found ? invN(o.act) : '—'}</td>
+      <td class="num">${invW(o.amt)}</td><td class="num">${invN(o.plan)}${o.noImps ? ` <span class="inv-hint" title="CPM 누락 등으로 계획 노출을 모르는 행">+${o.noImps}행 미상</span>` : ''}</td>
+      <td class="num">${invW(o.amtY)}</td><td class="num">${invN(o.planY)}</td><td class="num">${o.found ? invW(o.actAmt) : '—'}</td><td class="num b">${o.found ? invN(o.act) : '—'}</td>
       <td class="num" style="color:${o.ratio !== null && o.ratio < 0.9 ? 'var(--red)' : 'inherit'}">${o.found ? (o.ratio * 100).toFixed(1) + '%' : '—'}</td>
       <td class="num" style="color:${o.gap < 0 ? 'var(--red)' : 'var(--green-text)'}">${o.found ? (o.gap >= 0 ? '+' : '−') + invN(Math.abs(o.gap)) : '—'}</td>
       <td>${badge(o)}</td><td style="color:var(--text3);font-size:10px">${invEsc(o.order)}</td></tr>`;
@@ -8271,13 +8287,13 @@ function invRenderKPI(agg) {
   const lbl = `${invMD(d)}(${invDOW(d)})${isToday ? ' 오늘' : ''}`;
   let peakI = 0; agg.tot.forEach((v, i) => { if (v > agg.tot[peakI]) peakI = i; });
   const peak = agg.tot[peakI] || 0, peakDev = agg.avg ? (peak - agg.avg) / agg.avg * 100 : 0;
-  const unit = INV.metric === 'slot' ? '15초 환산' : '노출';
+  const unit = { imps: '노출', slot: '15초 환산', amt: '금액' }[INV.metric] || '노출';
   const share30i = st.video ? st.imps30 / st.video * 100 : 0;
   const share30s = st.slot ? st.slot30 / st.slot * 100 : 0;
   el.innerHTML = `
     <div class="metric"><div class="metric-label">${lbl} 일 필요 노출</div>
       <div class="metric-value">${invN(st.imps)}</div>
-      <div class="metric-sub">영상 ${invN(st.video)} · 비영상 ${invN(st.nonvideo)} · 캠페인 ${st.camps}건</div></div>
+      <div class="metric-sub">영상 ${invN(st.video)} · 비영상 ${invN(st.nonvideo)} · 캠페인 ${st.camps}건 · 하루 청약금액 <b>${invW(st.amt)}</b></div></div>
     <div class="metric"><div class="metric-label">${lbl} 15초 기준 일 필요</div>
       <div class="metric-value">${invN(st.slot)}</div>
       <div class="metric-sub">30초 ${invShort(st.imps30)}회를 15초 2회로 세서 <b style="color:var(--red)">+${invShort(st.slot - st.video)}</b> (영상 일 필요 ${invShort(st.video)} 기준)</div></div>
@@ -8285,7 +8301,7 @@ function invRenderKPI(agg) {
       <div class="metric-value" style="color:var(--red)">+${st.video ? ((st.slot / st.video - 1) * 100).toFixed(1) : 0}%</div>
       <div class="metric-sub">영상 일 필요 노출에 이만큼 더해서 보면 돼요 (30초 비중 ${share30i.toFixed(0)}%만큼 늘어나요)</div></div>
     <div class="metric"><div class="metric-label">기간 내 피크 (${unit})</div>
-      <div class="metric-value">${invShort(peak)}</div>
+      <div class="metric-value">${invFmtS(INV.metric, peak)}</div>
       <div class="metric-sub">${peak ? `${invMD(agg.days[peakI])}(${invDOW(agg.days[peakI])}) · 평균 대비 <span class="inv-kpi-delta" style="color:${peakDev >= 20 ? 'var(--red)' : 'var(--text2)'}">${Math.round(peakDev) >= 0 ? '+' : ''}${Math.round(peakDev)}%</span>` : '—'}</div></div>`;
 }
 
@@ -8293,7 +8309,7 @@ function invRenderKPI(agg) {
 function invRenderChart(agg) {
   const el = document.getElementById('ch-inv');
   const title = document.getElementById('inv-chart-title');
-  if (title) title.textContent = `일별 필요 ${INV.metric === 'slot' ? '15초 환산 노출' : '노출'} — ${INV_DIMS[INV.dim].label}별`;
+  if (title) title.textContent = `일별 필요 ${invUnitOf(INV.metric)} — ${INV_DIMS[INV.dim].label}별`;
   if (!el || typeof Chart === 'undefined') return;
   if (INV.chart) INV.chart.destroy();
   const t = invToday();
@@ -8303,7 +8319,7 @@ function invRenderChart(agg) {
     borderRadius: 2, stack: 'v', maxBarThickness: 30,
   }));
   datasets.push({
-    type: 'line', label: `기간 평균 ${invShort(agg.avg)}`, data: agg.days.map(() => Math.round(agg.avg)),
+    type: 'line', label: `기간 평균 ${invFmtS(INV.metric, agg.avg)}`, data: agg.days.map(() => Math.round(agg.avg)),
     borderColor: 'rgba(100,116,139,.85)', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, stack: 'avg', order: -1,
   });
   // 비영상 하루 한도선 (TAS 실집행 상위 10% 하루 노출)
@@ -8326,11 +8342,11 @@ function invRenderChart(agg) {
           filter: i => i.dataset.stack !== 'avg' && !String(i.dataset.stack).startsWith('cap') && i.raw > 0,
           itemSort: (a, b) => b.raw - a.raw,
           callbacks: {
-            label: c => `${c.dataset.label}: ${invN(c.raw)}`,
+            label: c => `${c.dataset.label}: ${invFmt(INV.metric, c.raw)}`,
             footer: items => {
               const s = items.reduce((a, i) => a + (i.raw || 0), 0);
               const dv = agg.avg ? (s - agg.avg) / agg.avg * 100 : 0;
-              const lines = [`합계 ${invN(s)} (평균 대비 ${dv >= 0 ? '+' : ''}${dv.toFixed(0)}%)`];
+              const lines = [`합계 ${invFmt(INV.metric, s)} (평균 대비 ${dv >= 0 ? '+' : ''}${dv.toFixed(0)}%)`];
               caps.forEach(c => {
                 const v = agg.map[c.prod] ? agg.map[c.prod][items[0].dataIndex] : 0;
                 if (v) lines.push(`${c.prod}: 한도 ${invShort(c.max)}의 ${(v / c.max * 100).toFixed(0)}%${v > c.max ? ' ⚠️ 넘침' : ''} (상위 10% ${invShort(c.p90)} · 최근 30일 평균 ${invShort(c.avg30)})`);
@@ -8348,7 +8364,7 @@ function invRenderChart(agg) {
             color: c => { const d = agg.days[c.index]; return d === t ? '#e8112d' : invWeekend(d) ? '#2563eb' : '#6b7280'; },
           },
         },
-        y: { stacked: true, ticks: { font: { size: 10 }, color: '#6b7280', callback: v => invShort(v) }, grid: { color: 'rgba(0,0,0,.05)' } },
+        y: { stacked: true, ticks: { font: { size: 10 }, color: '#6b7280', callback: v => invFmtS(INV.metric, v) }, grid: { color: 'rgba(0,0,0,.05)' } },
       },
     },
   });
@@ -8364,28 +8380,29 @@ function invDevStyle(v, avg) {
 
 function invRenderTable(agg) {
   const el = document.getElementById('inv-table'); if (!el || !agg) return;
-  const unit = INV.metric === 'slot' ? '15초 환산 노출' : '노출';
+  const unit = invUnitOf(INV.metric), M = INV.metric, AM = invAltOf(M), F = v => invFmt(M, v);
   document.getElementById('inv-tbl-title').textContent = `일별 필요 ${unit} — ${INV_DIMS[INV.dim].label}별 (날짜를 누르면 아래에 그날 캠페인)`;
   if (!agg.keys.length) { el.innerHTML = '<div class="empty" style="padding:1.5rem">선택한 기간·필터에 해당하는 청약이 없어요</div>'; return; }
   const t = invToday(), n = agg.days.length;
   const thDate = d => `<th class="inv-date${d === t ? ' inv-today' : ''}${invWeekend(d) ? ' inv-wkend' : ''}${d === INV.sel ? ' inv-selcol' : ''}" onclick="invSelect(${d})">${invMD(d)}<br><span>${invDOW(d)}</span></th>`;
-  let h = `<table class="inv-table"><thead><tr><th class="inv-stick">${INV_DIMS[INV.dim].label}</th>${agg.days.map(thDate).join('')}<th>기간 합계</th><th>일평균</th></tr></thead><tbody>`;
+  const altTh = AM === 'amt' ? '<th title="청약금액 ÷ 집행일수 × 이 기간 일수">기간 금액</th>' : '<th title="이 기간 필요 노출 합 (15초 환산 아님)">기간 노출</th>';
+  let h = `<table class="inv-table"><thead><tr><th class="inv-stick">${INV_DIMS[INV.dim].label}</th>${agg.days.map(thDate).join('')}<th>기간 합계</th>${altTh}<th>일평균</th></tr></thead><tbody>`;
   // 상품 대분류로 볼 때 이미지배너 · 일시정지가 하루 한도(TAS 실집행 상위 10%)를 넘는 날은 빨갛게
   const capOf = k => INV.dim === 'big' && INV.metric === 'imps' && NV_PRODUCTS.includes(k) && DACT.loaded && DACT.nv[k] ? DACT.nv[k].max : 0;
   agg.keys.forEach(k => {
     const arr = agg.map[k], sum = arr.reduce((s, v) => s + v, 0), cap = capOf(k);
     h += `<tr><td class="inv-stick" title="${invEsc(k)}${cap ? ` · 하루 한도 ${invN(cap)}` : ''}"><span class="inv-dot" style="background:${invColor(k)}"></span>${invEsc(k)}${cap ? ` <span class="inv-hint">한도 ${invShort(cap)}</span>` : ''}</td>` +
-      arr.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}"${cap && v > cap ? ` style="background:rgba(220,38,38,.18);color:var(--red-text);font-weight:700" title="하루 한도 ${invN(cap)} 넘음"` : ''}>${v ? invN(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
-      `<td class="num b">${invN(sum)}</td><td class="num">${invN(sum / n)}</td></tr>`;
+      arr.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}"${cap && v > cap ? ` style="background:rgba(220,38,38,.18);color:var(--red-text);font-weight:700" title="하루 한도 ${invN(cap)} 넘음"` : ''}>${v ? F(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
+      `<td class="num b">${F(sum)}</td><td class="num" style="color:var(--text2)">${invFmt(AM, agg.alt[k] || 0)}</td><td class="num">${F(sum / n)}</td></tr>`;
   });
   const total = agg.tot.reduce((s, v) => s + v, 0);
   h += `<tr class="inv-total"><td class="inv-stick">합계</td>` +
-    agg.tot.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}" style="${invDevStyle(v, agg.avg)}" title="평균 ${invN(agg.avg)} 대비">${v ? invN(v) : '·'}</td>`).join('') +
-    `<td class="num">${invN(total)}</td><td class="num">${invN(total / n)}</td></tr></tbody></table>`;
+    agg.tot.map((v, i) => `<td class="num${agg.days[i] === INV.sel ? ' inv-selcol' : ''}" style="${invDevStyle(v, agg.avg)}" title="평균 ${F(agg.avg)} 대비">${v ? F(v) : '·'}</td>`).join('') +
+    `<td class="num">${F(total)}</td><td class="num" style="color:var(--text2)">${invFmt(AM, Object.values(agg.alt).reduce((s, v) => s + v, 0))}</td><td class="num">${F(total / n)}</td></tr></tbody></table>`;
   el.innerHTML = h;
   const sw = c => `<i style="background:${c}"></i>`;
   document.getElementById('inv-legend').innerHTML =
-    `합계 행 색: 기간 평균(${invN(agg.avg)}) 대비 ${sw('rgba(220,38,38,.30)')}+30%↑ ${sw('rgba(220,38,38,.18)')}+20% ${sw('rgba(220,38,38,.09)')}+10% ${sw('rgba(37,99,235,.09)')}−10% ${sw('rgba(37,99,235,.18)')}−20% ${sw('rgba(37,99,235,.30)')}−30%↓`;
+    `합계 행 색: 기간 평균(${F(agg.avg)}) 대비 ${sw('rgba(220,38,38,.30)')}+30%↑ ${sw('rgba(220,38,38,.18)')}+20% ${sw('rgba(220,38,38,.09)')}+10% ${sw('rgba(37,99,235,.09)')}−10% ${sw('rgba(37,99,235,.18)')}−20% ${sw('rgba(37,99,235,.30)')}−30%↓`;
 }
 
 // ════════════════════════════════════════════════════════
@@ -8790,7 +8807,7 @@ function demoRender(o) {
 }
 function invRenderDemo() {
   demoRender({ p: 'inv', from: INV.from, to: INV.to, mode: INV.demoMode, cell: INV.demoCell, pick: 'invPickDemoCell',
-    unit: INV.metric === 'slot' ? '15초 환산 노출' : '노출', basisNote: '청약 계획 기준 (위 보기 설정의 기간)',
+    unit: invUnitOf(INV.metric), basisNote: '청약 계획 기준 (위 보기 설정의 기간)',
     redraw: invRenderDemo, rows: invFiltered().filter(r => r.daily).map(r => ({ v: invVal(r), a: r.start, b: r.end, tgt: r.target, big: r.big,
       label: `${r.adv} · ${r.brand}`, sub: `${r.big} · ${r.sec} · ${invMD(r.start)}~${invMD(r.end)}` })) });
 }
@@ -8798,7 +8815,7 @@ function paceSetDemoMode(v) { PACE.demoMode = v; paceRenderDemo(); paceSavePrefs
 function pacePickDemoCell(k) { PACE.demoCell = PACE.demoCell === k ? null : k; paceRenderDemo(); }
 function paceRenderDemo() {
   demoRender({ p: 'pc', from: PACE.from, to: PACE.to, mode: PACE.demoMode, cell: PACE.demoCell, pick: 'pacePickDemoCell',
-    unit: PACE.metric === 'slot' ? '15초 환산 노출' : '노출', basisNote: '실소진 반영 남은 필요량 (오늘~종료일)',
+    unit: invUnitOf(PACE.metric), basisNote: '실소진 반영 남은 필요량 (오늘~종료일)',
     redraw: paceRenderDemo, rows: paceFiltered().filter(r => r.need > 0).map(r => ({ v: paceVal(r, r.need), a: r.first, b: r.end, tgt: r.target, big: r.big, id: r.id,
       label: r.name, sub: `${r.big} · ${r.sec} · 남은 ${r.daysLeft}일 · ~${invMD(r.end)}` })) });
 }
@@ -9134,21 +9151,21 @@ function invRenderDrill() {
   if (!list.length) { el.innerHTML = '<div class="empty" style="padding:1.2rem">이 날 집행되는 청약이 없어요</div>'; return; }
   const tag = r => r.paid === '유가' ? '<span class="inv-tag y">유가</span>' : r.paid === '무가(보너스)' ? '<span class="inv-tag n">무가</span>' : `<span class="inv-tag">${invEsc(r.paid)}</span>`;
   const st = r => r.status.includes('등록전') ? '<span class="inv-tag pre">등록전</span>' : `<span class="inv-tag">${invEsc(r.status.replace(/^\d\.\s*/, ''))}</span>`;
-  let sumI = 0, sumS = 0;
+  let sumI = 0, sumS = 0, sumA = 0;
   let h = `<table class="inv-table"><thead><tr>
     <th class="inv-stick">광고주 · 브랜드</th><th style="text-align:left">대분류</th><th style="text-align:left">소분류</th><th style="text-align:left">세부 타겟팅</th>
-    <th>초수</th><th>유가</th><th>진행</th><th>기간</th><th>총 예상 노출</th><th>일 필요 노출</th><th>15초 환산</th><th>행</th><th>설정</th></tr></thead><tbody>`;
+    <th>초수</th><th>유가</th><th>진행</th><th>기간</th><th>청약금액</th><th>총 예상 노출</th><th title="청약금액 ÷ 집행일수">일 금액</th><th>일 필요 노출</th><th>15초 환산</th><th>행</th><th>설정</th></tr></thead><tbody>`;
   list.forEach(r => {
-    const s = r.daily * invWeight(r.sec); sumI += r.daily; sumS += s;
+    const s = r.daily * invWeight(r.sec), a = invAmtDaily(r); sumI += r.daily; sumS += s; sumA += a;
     h += `<tr><td class="inv-stick" title="${invEsc(r.adv + ' · ' + r.brand)}">${invEsc(r.adv)} <span style="color:var(--text3)">· ${invEsc(r.brand)}</span></td>
       <td>${invEsc(r.big)}</td><td style="color:var(--text2)">${invEsc(r.small)}</td><td style="color:var(--text3)">${invEsc(r.target)}</td>
       <td class="num">${invEsc(r.sec)}</td><td>${tag(r)}${r.cpmSource === 'proposal' ? ' <span class="inv-tag pre" title="시트 CPM이 비어 있어 제안 CPM으로 계산">제안CPM</span>' : ''}${r.cpmSource === 'tas' ? ` <span class="inv-tag y" title="시트 CPM이 비어 있어 같은 주문의 TAS 캠페인 CPM ${invN(r.tasCpm.cpm)}으로 계산">TAS CPM</span>` : ''}${r.ovr === 'target' ? ' <span class="inv-tag pre" title="내가 목표 노출을 지정함 (나에게만 적용)">🎯내 목표</span>' : ''}</td><td>${st(r)}</td>
       <td class="num">${invMD(r.start)}~${invMD(r.end)} <span style="color:var(--text3)">(${r.days}일)</span></td>
-      <td class="num">${invN(r.imps)}</td><td class="num b">${invN(r.daily)}</td><td class="num">${invN(s)}</td>
+      <td class="num">${invW(r.amt)}</td><td class="num">${invN(r.imps)}</td><td class="num">${invW(a)}</td><td class="num b">${invN(r.daily)}</td><td class="num">${invN(s)}</td>
       <td class="num" style="color:var(--text3)">${r.rowNo}</td>
       <td><button class="btn exc-mini" title="목표 노출 지정 또는 제외" onclick="excOpenFor('inv',${invEsc(JSON.stringify(r.brand || r.adv))})">🎯</button></td></tr>`;
   });
-  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="8"></td><td class="num">${invN(sumI)}</td><td class="num">${invN(sumS)}</td><td></td><td></td></tr></tbody></table>`;
+  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="9"></td><td class="num">${invW(sumA)}</td><td class="num">${invN(sumI)}</td><td class="num">${invN(sumS)}</td><td></td><td></td></tr></tbody></table>`;
   el.innerHTML = h;
 }
 
@@ -9247,7 +9264,7 @@ async function xlsxSave(sheets, filename, graph) {
 function invDownloadXLSX() {
   const agg = INV.agg;
   if (!agg || !agg.keys.length) { alert('내보낼 데이터가 없어요'); return; }
-  const unit = INV.metric === 'slot' ? '15초환산' : '노출';
+  const unit = { slot: '15초환산', amt: '금액' }[INV.metric] || '노출';
   const R = v => Math.round(v || 0), n = agg.days.length;
   const daily = [[INV_DIMS[INV.dim].label, ...agg.days.map(d => `${invISO(d)}(${invDOW(d)})`), '기간합계', '일평균']];
   agg.keys.forEach(k => { const sum = agg.map[k].reduce((s, v) => s + v, 0); daily.push([k, ...agg.map[k].map(R), R(sum), R(sum / n)]); });
@@ -9274,7 +9291,7 @@ function invDownloadXLSX() {
   xlsxSave([['일별_요약', daily, [18, ...agg.days.map(() => 11), 13, 11]], ['캠페인별', camp, [6, 12, 18, 18, 14, 28, 18, 9, 11, 11, 11, 8, 13, 9, 13, 13, 12, 12, 16, 16, 20, 24]],
     ['데이터_확인', issues, [6, 10, 18, 18, 14, 28, 9, 13, 60]], ['기준', meta, [16, 40]]],
     `상품별_인벤토리_${unit}_${invISO(INV.from)}_${invISO(INV.to)}.xlsx`,
-    { chart: INV.chart, title: `📦 상품별 인벤토리 현황 — 일별 필요 ${INV.metric === 'slot' ? '15초 환산 노출' : '노출'} (${INV_DIMS[INV.dim].label}별)`,
+    { chart: INV.chart, title: `📦 상품별 인벤토리 현황 — 일별 필요 ${invUnitOf(INV.metric)} (${INV_DIMS[INV.dim].label}별)`,
       sub: `${invISO(INV.from)} ~ ${invISO(INV.to)} · 운영마스터파일 ${INV.meta.sheet || ''} · 시트 수정 ${invTime(INV.meta.sheetUpdated)} · 다운로드 ${invTime(new Date().toISOString())}` });
 }
 
@@ -9368,7 +9385,7 @@ EXC.providers.pace = {
 function paceFiltered() {
   return PACE.rows.filter(r => r.ovr !== 'exclude' && PACE.statusOn[r.status] !== false && fltPass(PACE.flt, r));
 }
-const paceVal = (r, v) => v * (PACE.metric === 'slot' ? invWeight(r.sec) : 1);
+const paceVal = (r, v) => PACE.metric === 'amt' ? v * (r.cpx || 0) / 1000 : v * (PACE.metric === 'slot' ? invWeight(r.sec) : 1);   // 금액 = 노출 × CPM ÷ 1,000
 
 async function paceOnShow() {
   await shareLoad();
@@ -9416,18 +9433,19 @@ function paceSetSort(v) { PACE.sort = v; paceRenderCamps(); paceSavePrefs(); }
 
 function paceAggregate() {
   const days = []; for (let d = PACE.from; d <= PACE.to; d++) days.push(d);
-  const n = days.length, map = {}, tot = new Array(n).fill(0), plan = new Array(n).fill(0);
+  const n = days.length, map = {}, tot = new Array(n).fill(0), plan = new Array(n).fill(0), alt = {};
   paceFiltered().forEach(r => {
     const k = PACE_DIMS[PACE.dim].key(r);
     const arr = map[k] || (map[k] = new Array(n).fill(0));
     for (let d = Math.max(r.first, PACE.from); d <= Math.min(r.end, PACE.to); d++) {
       const v = paceVal(r, r.need); arr[d - PACE.from] += v; tot[d - PACE.from] += v;
+      alt[k] = (alt[k] || 0) + (invAltOf(PACE.metric) === 'amt' ? r.need * (r.cpx || 0) / 1000 : r.need);
     }
     for (let d = Math.max(r.start, PACE.from); d <= Math.min(r.end, PACE.to); d++) plan[d - PACE.from] += paceVal(r, r.plan);
   });
   const keys = Object.keys(map).sort((a, b) => map[b].reduce((s, v) => s + v, 0) - map[a].reduce((s, v) => s + v, 0));
   const act = tot.filter(v => v > 0), avg = act.length ? act.reduce((s, v) => s + v, 0) / act.length : 0;
-  return { days, map, keys, tot, plan, avg };
+  return { days, map, keys, tot, plan, avg, alt };
 }
 
 function paceRender() {
@@ -9489,22 +9507,22 @@ function paceRenderKPI() {
   const el = document.getElementById('pc-kpi'); if (!el) return;
   const d = PACE.sel, st = paceDayStats(d), diff = st.need - st.plan, dp = st.plan ? diff / st.plan * 100 : 0;
   const lbl = `${invMD(d)}(${invDOW(d)})${d === invToday() ? ' 오늘' : ''}`;
-  const unit = PACE.metric === 'slot' ? ' (15초 환산)' : '';
+  const unit = PACE.metric === 'slot' ? ' (15초 환산)' : PACE.metric === 'amt' ? ' (금액)' : '', F = v => invFmt(PACE.metric, v);
   const inv = INV.loaded ? invDayStats(d) : null;
-  const invV = inv ? (PACE.metric === 'slot' ? inv.slot : inv.imps) : null;
+  const invV = inv ? (PACE.metric === 'slot' ? inv.slot : PACE.metric === 'amt' ? inv.amt : inv.imps) : null;
   el.innerHTML = `
     <div class="metric"><div class="metric-label">${lbl} 실소진 기반 일 필요${unit}</div>
-      <div class="metric-value">${invN(st.need)}</div>
+      <div class="metric-value">${F(st.need)}</div>
       <div class="metric-sub">캠페인 ${st.camps}건 · 남은 목표 ÷ 남은 일수</div></div>
     <div class="metric"><div class="metric-label">${lbl} 계획 기준(균등)${unit}</div>
-      <div class="metric-value">${invN(st.plan)}</div>
-      <div class="metric-sub">목표 노출 ÷ 전체 집행일수${invV !== null ? ` · 운영마스터 기준 ${invN(invV)}` : ''}</div></div>
+      <div class="metric-value">${F(st.plan)}</div>
+      <div class="metric-sub">목표 노출 ÷ 전체 집행일수${invV !== null ? ` · 운영마스터 기준 ${F(invV)}` : ''}</div></div>
     <div class="metric"><div class="metric-label">미소진 이월분</div>
-      <div class="metric-value" style="color:${diff > 0 ? 'var(--red)' : 'var(--text1,#111)'}">${diff >= 0 ? '+' : '−'}${invN(Math.abs(diff))}</div>
+      <div class="metric-value" style="color:${diff > 0 ? 'var(--red)' : 'var(--text1,#111)'}">${diff >= 0 ? '+' : '−'}${F(Math.abs(diff))}</div>
       <div class="metric-sub">계획 대비 ${dp >= 0 ? '+' : ''}${dp.toFixed(1)}% ${diff > 0 ? '· 밀린 노출이 남은 날로 넘어옴' : '· 초과 소진으로 여유'}</div></div>
     <div class="metric"><div class="metric-label">페이스 미달 캠페인</div>
       <div class="metric-value">${st.behind}건</div>
-      <div class="metric-sub">노출달성율이 기간달성율보다 ${PACE_BEHIND_PP}%p↓ · 이월 +${invN(st.behindExtra)} · 앞선 캠페인 ${st.ahead}건</div></div>`;
+      <div class="metric-sub">노출달성율이 기간달성율보다 ${PACE_BEHIND_PP}%p↓ · 이월 +${F(st.behindExtra)} · 앞선 캠페인 ${st.ahead}건</div></div>`;
 }
 
 function paceRenderChart() {
@@ -9512,7 +9530,7 @@ function paceRenderChart() {
   const agg = PACE.agg, t = invToday();
   if (PACE.chart) { PACE.chart.destroy(); PACE.chart = null; }
   document.getElementById('pc-chart-title').textContent =
-    `일별 필요 ${PACE.metric === 'slot' ? '15초 환산 노출' : '노출'} — ${PACE_DIMS[PACE.dim].label}별 (막대: 실소진 기반 · 선: 계획 기준)`;
+    `일별 필요 ${invUnitOf(PACE.metric)} — ${PACE_DIMS[PACE.dim].label}별 (막대: 실소진 기반 · 선: 계획 기준)`;
   const ds = agg.keys.map(k => ({ type: 'bar', label: k, data: agg.map[k], backgroundColor: invColor(k), stack: 's', borderRadius: 2, order: 2 }));
   ds.push({ type: 'line', label: '계획 기준(균등)', data: agg.plan, borderColor: '#111827', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1 });
   PACE.chart = new Chart(el, {
@@ -9523,12 +9541,12 @@ function paceRenderChart() {
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } },
         tooltip: { itemSort: (a, b) => b.raw - a.raw, filter: i => i.raw > 0,
-          callbacks: { label: c => `${c.dataset.label}: ${invN(c.raw)}`, footer: items => {
-            const i = items[0].dataIndex; return `실소진 합계 ${invN(agg.tot[i])} · 계획 ${invN(agg.plan[i])}`; } } },
+          callbacks: { label: c => `${c.dataset.label}: ${invFmt(PACE.metric, c.raw)}`, footer: items => {
+            const i = items[0].dataIndex; return `실소진 합계 ${invFmt(PACE.metric, agg.tot[i])} · 계획 ${invFmt(PACE.metric, agg.plan[i])}`; } } },
       },
       scales: {
         x: { stacked: true, ticks: { font: { size: 10 }, color: ctx => { const d = agg.days[ctx.index]; return d === t ? '#e8112d' : invWeekend(d) ? '#2563eb' : '#6b7280'; } } },
-        y: { stacked: true, ticks: { callback: v => invShort(v), font: { size: 10 } } },
+        y: { stacked: true, ticks: { callback: v => invFmtS(PACE.metric, v), font: { size: 10 } } },
       },
     },
   });
@@ -9539,22 +9557,24 @@ function paceRenderTable() {
   const agg = PACE.agg, n = agg.days.length, t = invToday();
   if (!agg.keys.length) { el.innerHTML = '<div class="empty" style="padding:1.5rem">선택한 기간·필터에 해당하는 캠페인이 없어요</div>'; return; }
   const th = d => `<th class="inv-date${d === t ? ' inv-today' : ''}${invWeekend(d) ? ' inv-wkend' : ''}${d === PACE.sel ? ' inv-selcol' : ''}" onclick="paceSelect(${d})">${invMD(d)}<br><span>${invDOW(d)}</span></th>`;
-  let h = `<table class="inv-table"><thead><tr><th class="inv-stick">${PACE_DIMS[PACE.dim].label}</th>${agg.days.map(th).join('')}<th>기간 합계</th><th>일평균</th></tr></thead><tbody>`;
+  const M = PACE.metric, AM = invAltOf(M), F = v => invFmt(M, v);
+  const altTh = AM === 'amt' ? '<th title="필요 노출 × CPM ÷ 1,000 · 이 기간 합">기간 금액</th>' : '<th title="이 기간 필요 노출 합 (15초 환산 아님)">기간 노출</th>';
+  let h = `<table class="inv-table"><thead><tr><th class="inv-stick">${PACE_DIMS[PACE.dim].label}</th>${agg.days.map(th).join('')}<th>기간 합계</th>${altTh}<th>일평균</th></tr></thead><tbody>`;
   agg.keys.forEach(k => {
     const arr = agg.map[k], sum = arr.reduce((s, v) => s + v, 0);
     h += `<tr><td class="inv-stick"><span class="inv-dot" style="background:${invColor(k)}"></span>${invEsc(k)}</td>` +
-      arr.map((v, i) => `<td class="num${agg.days[i] === PACE.sel ? ' inv-selcol' : ''}">${v ? invN(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
-      `<td class="num b">${invN(sum)}</td><td class="num">${invN(sum / n)}</td></tr>`;
+      arr.map((v, i) => `<td class="num${agg.days[i] === PACE.sel ? ' inv-selcol' : ''}">${v ? F(v) : '<span class="inv-zero">·</span>'}</td>`).join('') +
+      `<td class="num b">${F(sum)}</td><td class="num" style="color:var(--text2)">${invFmt(AM, agg.alt[k] || 0)}</td><td class="num">${F(sum / n)}</td></tr>`;
   });
   const tot = agg.tot.reduce((s, v) => s + v, 0), pl = agg.plan.reduce((s, v) => s + v, 0);
   h += `<tr class="inv-total"><td class="inv-stick">실소진 기반 합계</td>` +
-    agg.tot.map((v, i) => `<td class="num${agg.days[i] === PACE.sel ? ' inv-selcol' : ''}" style="${invDevStyle(v, agg.avg)}">${v ? invN(v) : '·'}</td>`).join('') +
-    `<td class="num">${invN(tot)}</td><td class="num">${invN(tot / n)}</td></tr>`;
-  h += `<tr><td class="inv-stick" style="color:var(--text3)">계획 기준(균등)</td>` + agg.plan.map(v => `<td class="num" style="color:var(--text3)">${v ? invN(v) : '·'}</td>`).join('') +
-    `<td class="num" style="color:var(--text3)">${invN(pl)}</td><td class="num" style="color:var(--text3)">${invN(pl / n)}</td></tr>`;
+    agg.tot.map((v, i) => `<td class="num${agg.days[i] === PACE.sel ? ' inv-selcol' : ''}" style="${invDevStyle(v, agg.avg)}">${v ? F(v) : '·'}</td>`).join('') +
+    `<td class="num">${F(tot)}</td><td class="num" style="color:var(--text2)">${invFmt(AM, Object.values(agg.alt).reduce((s, v) => s + v, 0))}</td><td class="num">${F(tot / n)}</td></tr>`;
+  h += `<tr><td class="inv-stick" style="color:var(--text3)">계획 기준(균등)</td>` + agg.plan.map(v => `<td class="num" style="color:var(--text3)">${v ? F(v) : '·'}</td>`).join('') +
+    `<td class="num" style="color:var(--text3)">${F(pl)}</td><td></td><td class="num" style="color:var(--text3)">${F(pl / n)}</td></tr>`;
   h += `<tr><td class="inv-stick">이월분 (실소진 − 계획)</td>` + agg.tot.map((v, i) => { const x = v - agg.plan[i];
-    return `<td class="num" style="color:${x > 0 ? 'var(--red)' : 'var(--text3)'}">${x ? (x > 0 ? '+' : '−') + invN(Math.abs(x)) : '·'}</td>`; }).join('') +
-    `<td class="num">${(tot - pl) >= 0 ? '+' : '−'}${invN(Math.abs(tot - pl))}</td><td></td></tr></tbody></table>`;
+    return `<td class="num" style="color:${x > 0 ? 'var(--red)' : 'var(--text3)'}">${x ? (x > 0 ? '+' : '−') + F(Math.abs(x)) : '·'}</td>`; }).join('') +
+    `<td class="num">${(tot - pl) >= 0 ? '+' : '−'}${F(Math.abs(tot - pl))}</td><td></td><td></td></tr></tbody></table>`;
   el.innerHTML = h;
 }
 
@@ -9569,12 +9589,12 @@ function paceRenderCamps() {
   document.querySelectorAll('#pc-sort button').forEach(b => b.classList.toggle('on', b.dataset.v === PACE.sort));
   if (!list.length) { el.innerHTML = '<div class="empty" style="padding:1.2rem">이 날 집행되는 캠페인이 없어요</div>'; return; }
   const pct = v => v === null || v === undefined ? '—' : v.toFixed(1) + '%';
-  let sN = 0, sP = 0;
+  let sN = 0, sP = 0, sA = 0;
   let h = `<table class="inv-table"><thead><tr><th class="inv-stick">청약명</th><th style="text-align:left">상품 템플릿</th><th>상태</th><th>기간</th><th>CPM</th>
-    <th>기간달성</th><th>노출달성</th><th>갭</th><th>목표 노출</th><th>어제까지 집행</th><th>남은 노출</th><th>남은 일</th>
-    <th>계획 일노출</th><th>실소진 일 필요</th><th>이월분</th><th title="TOP20 소진 추이 시트 · 최근 7일 (세팅 일예산 − 실제 소진) 합">최근 미소진</th><th>설정</th></tr></thead><tbody>`;
+    <th>기간달성</th><th>노출달성</th><th>갭</th><th>총예산</th><th>목표 노출</th><th>어제까지 집행</th><th>남은 노출</th><th>남은 일</th>
+    <th>계획 일노출</th><th>실소진 일 필요</th><th title="실소진 일 필요 × CPM ÷ 1,000">일 필요 금액</th><th>이월분</th><th title="TOP20 소진 추이 시트 · 최근 7일 (세팅 일예산 − 실제 소진) 합">최근 미소진</th><th>설정</th></tr></thead><tbody>`;
   list.forEach(r => {
-    const carry = r.need - r.plan; sN += r.need; sP += r.plan;
+    const carry = r.need - r.plan, needAmt = r.need * (r.cpx || 0) / 1000; sN += r.need; sP += r.plan; sA += needAmt;
     const un = TOPT.loaded ? topCampUn(r.id, 7) : null;
     const unTd = un ? `<td class="num" style="color:var(--red)" title="최근 7일 중 ${un.days}일 미소진 · 마지막 ${invMD(un.last)} · 노출 ${invN(un.unI)}">${invW(un.un)}<br><span style="font-size:10px">${un.days}일</span></td>`
       : `<td class="num" style="color:var(--text3)">${TOPT.loaded && /TOP\s?20/i.test(r.tmpl) ? '없음' : '·'}</td>`;
@@ -9584,12 +9604,12 @@ function paceRenderCamps() {
       <td class="num">${invMD(r.start)}~${invMD(r.end)}</td><td class="num">${invW(r.cpx)}</td>
       <td class="num">${pct(r.periodRate)}</td><td class="num">${pct(r.impRate)}</td>
       <td class="num b" style="color:${gapC}">${r.gap === null ? '시작 전' : (r.gap > 0 ? '+' : '') + r.gap.toFixed(1) + '%p'}</td>
-      <td class="num">${invN(r.T)}</td><td class="num">${invN(r.before)}</td><td class="num">${invN(r.remain)}</td><td class="num">${r.daysLeft}일</td>
-      <td class="num">${invN(r.plan)}</td><td class="num b">${invN(r.need)}</td>
+      <td class="num">${r.budget ? invW(r.budget) : '—'}</td><td class="num">${invN(r.T)}</td><td class="num">${invN(r.before)}</td><td class="num">${invN(r.remain)}</td><td class="num">${r.daysLeft}일</td>
+      <td class="num">${invN(r.plan)}</td><td class="num b">${invN(r.need)}</td><td class="num">${r.cpx ? invW(needAmt) : '—'}</td>
       <td class="num" style="color:${carry > 0 ? 'var(--red)' : 'var(--text3)'}">${carry >= 0 ? '+' : '−'}${invN(Math.abs(carry))}</td>${unTd}
       <td><button class="btn exc-mini" title="목표 노출 지정 또는 제외" onclick="excOpenFor('pace',${invEsc(JSON.stringify(r.name))})">🎯</button></td></tr>`;
   });
-  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="11"></td><td class="num">${invN(sP)}</td><td class="num">${invN(sN)}</td><td class="num">${sN - sP >= 0 ? '+' : '−'}${invN(Math.abs(sN - sP))}</td><td></td><td></td></tr></tbody></table>`;
+  h += `<tr class="inv-total"><td class="inv-stick">합계</td><td colspan="12"></td><td class="num">${invN(sP)}</td><td class="num">${invN(sN)}</td><td class="num">${invW(sA)}</td><td class="num">${sN - sP >= 0 ? '+' : '−'}${invN(Math.abs(sN - sP))}</td><td></td><td></td></tr></tbody></table>`;
   el.innerHTML = h;
 }
 
@@ -9607,7 +9627,7 @@ function paceRenderSkipped() {
 function paceDownloadXLSX() {
   const agg = PACE.agg;
   if (!agg || !agg.keys.length) { alert('내보낼 데이터가 없어요'); return; }
-  const R = v => Math.round(v || 0), n = agg.days.length, unit = PACE.metric === 'slot' ? '15초환산' : '노출';
+  const R = v => Math.round(v || 0), n = agg.days.length, unit = { slot: '15초환산', amt: '금액' }[PACE.metric] || '노출';
   const daily = [[PACE_DIMS[PACE.dim].label, ...agg.days.map(d => `${invISO(d)}(${invDOW(d)})`), '기간합계', '일평균']];
   agg.keys.forEach(k => { const s = agg.map[k].reduce((a, v) => a + v, 0); daily.push([k, ...agg.map[k].map(R), R(s), R(s / n)]); });
   const tot = agg.tot.reduce((a, v) => a + v, 0), pl = agg.plan.reduce((a, v) => a + v, 0);
@@ -9630,7 +9650,7 @@ function paceDownloadXLSX() {
     ['캠페인별', camp, [20, 30, 30, 36, 14, 9, 11, 10, 11, 11, 9, 13, 11, 11, 9, 13, 13, 14, 12, 13, 9, 12, 14, 12, 16, 20]],
     ['계산_불가', skipped, [30, 36, 10, 50]], ['기준', meta, [14, 80]]],
     `실소진_기반_인벤토리_${unit}_${invISO(PACE.from)}_${invISO(PACE.to)}.xlsx`,
-    { chart: PACE.chart, title: `📈 실소진 기반 인벤토리 — 일별 필요 ${PACE.metric === 'slot' ? '15초 환산 노출' : '노출'} (${PACE_DIMS[PACE.dim].label}별, 막대: 실소진 기반 · 점선: 계획 기준)`,
+    { chart: PACE.chart, title: `📈 실소진 기반 인벤토리 — 일별 필요 ${invUnitOf(PACE.metric)} (${PACE_DIMS[PACE.dim].label}별, 막대: 실소진 기반 · 점선: 계획 기준)`,
       sub: `${invISO(PACE.from)} ~ ${invISO(PACE.to)} · Campaign Dashboard 데이터 ${ST.lastUpdated || ''} · 다운로드 ${invTime(new Date().toISOString())}` });
 }
 
@@ -9854,5 +9874,74 @@ async function tasResetView() {
   const firstTab = document.querySelector(".tab[onclick*=\"go('inventory'\"]");
   if (firstTab) firstTab.click();
   tasSlotStart();
+})();
+</script>
+<script>
+// ════════════════════════════════════════════════════════
+// ↕️ 표 정렬 — 상품별 인벤토리 · 실소진 기반 인벤토리 탭의 표 머리글을 누르면
+//   큰 순(▼) → 작은 순(▲) → 원래 순서로 바뀌어요. 합계 줄과 그 아래 줄은 맨 아래에 그대로 둬요.
+//   표가 새로 그려져도(필터·날짜 변경) 고른 정렬을 다시 적용해요. 날짜 머리글은 날짜 선택용이라 빼요.
+// ════════════════════════════════════════════════════════
+(function () {
+  const SCOPE = '#sec-inventory, #sec-pace';
+  const STATE = {};   // 표가 들어 있는 칸 id → { col, dir: 1 | -1 }
+  const css = document.createElement('style');
+  css.textContent = `.tsort-th{cursor:pointer;user-select:none}.tsort-th:hover{color:var(--text)}.tsort-ic{font-size:9px;margin-left:3px;color:var(--text3)}.tsort-on .tsort-ic{color:var(--red)}`;
+  document.head.appendChild(css);
+  const holderOf = t => { let e = t.parentElement; while (e && !e.id) e = e.parentElement; return e; };
+  const valOf = td => {
+    if (!td) return null;
+    const t = (td.innerText || '').trim().split('\n')[0].trim();
+    if (!t || t === '·' || t === '—' || t === '-') return null;
+    const m = t.replace(/^[₩+]/, '').replace(/^−/, '-').match(/^-?₩?[\d,]+(\.\d+)?/);
+    if (m) { const sign = /^[−-]/.test(t) ? -1 : 1; return sign * parseFloat(m[0].replace(/[^\d.]/g, '')); }
+    return t;
+  };
+  function apply(table) {
+    const holder = holderOf(table); if (!holder) return;
+    const st = STATE[holder.id], ths = table.tHead ? [...table.tHead.rows[0].cells] : [];
+    ths.forEach((th, i) => {
+      if (th.hasAttribute('onclick') || th.classList.contains('inv-date')) return;
+      th.classList.add('tsort-th'); th.dataset.tsortCol = i;
+      th.classList.toggle('tsort-on', !!(st && st.col === i));
+      let ic = th.querySelector('.tsort-ic');
+      if (!ic) { ic = document.createElement('span'); ic.className = 'tsort-ic'; th.appendChild(ic); }
+      const want = st && st.col === i ? (st.dir < 0 ? '▼' : '▲') : '↕';
+      if (ic.textContent !== want) ic.textContent = want;
+      if (!th.title) th.title = '눌러서 정렬 (큰 순 → 작은 순 → 원래대로)';
+    });
+    const body = table.tBodies[0]; if (!body) return;
+    const rows = [...body.rows];
+    if (!body.dataset.tsortOrig) rows.forEach((r, i) => { r.dataset.tsortI = i; });
+    body.dataset.tsortOrig = '1';
+    const cut = rows.findIndex(r => r.classList.contains('inv-total'));
+    const head = cut < 0 ? rows : rows.slice(0, cut), tail = cut < 0 ? [] : rows.slice(cut);
+    const colIdx = (r, col) => {   // colspan이 있는 줄도 머리글 칸 번호에 맞춰요
+      let c = 0; for (const td of r.cells) { if (c === col) return td; c += td.colSpan || 1; if (c > col) return null; } return null;
+    };
+    let sorted;
+    if (!st) sorted = head.slice().sort((a, b) => a.dataset.tsortI - b.dataset.tsortI);
+    else sorted = head.slice().sort((a, b) => {
+      const x = valOf(colIdx(a, st.col)), y = valOf(colIdx(b, st.col));
+      if (x === null && y === null) return a.dataset.tsortI - b.dataset.tsortI;
+      if (x === null) return 1; if (y === null) return -1;
+      if (typeof x === 'number' && typeof y === 'number') return (x - y) * st.dir;
+      return String(x).localeCompare(String(y), 'ko', { numeric: true }) * st.dir;
+    });
+    const next = sorted.concat(tail);
+    if (next.some((r, i) => r !== rows[i])) next.forEach(r => body.appendChild(r));   // 순서가 바뀔 때만 옮겨요 (감시 루프 방지)
+  }
+  document.addEventListener('click', e => {
+    const th = e.target.closest('th.tsort-th'); if (!th || !th.closest(SCOPE)) return;
+    const table = th.closest('table'), holder = holderOf(table); if (!holder) return;
+    const col = +th.dataset.tsortCol, st = STATE[holder.id];
+    STATE[holder.id] = !st || st.col !== col ? { col, dir: -1 } : st.dir < 0 ? { col, dir: 1 } : undefined;
+    apply(table);
+  });
+  let queued = false;
+  const scan = () => { queued = false; document.querySelectorAll(SCOPE).forEach(sec => sec.querySelectorAll('table.inv-table').forEach(t => { if (t.tHead) apply(t); })); };
+  new MutationObserver(() => { if (!queued) { queued = true; setTimeout(scan, 0); } })
+    .observe(document.body, { childList: true, subtree: true });
+  scan();
 })();
 </script>
