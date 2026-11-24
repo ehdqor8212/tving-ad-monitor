@@ -2077,6 +2077,30 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
 
   <div class="metrics" id="pc-kpi"></div>
 
+  <div class="card" id="pc-fcx-card" data-fold="pc-fcx">
+    <div class="inv-top" style="margin-bottom:8px">
+      <div class="card-title" style="margin-bottom:0">🔮 오늘 · 기간 달성 예측</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="inv-lbl">작년 흐름</span>
+        <div class="inv-seg" id="pc-fcx-src">
+          <button data-v="tas" onclick="fcxSet('src','tas')" title="TAS 리포트 상품별 하루 실노출 — 작년 같은 요일">작년 실노출 (TAS)</button>
+          <button data-v="vod" onclick="fcxSet('src','vod')" title="TVING VOD 시청시간 — 작년 같은 요일">작년 시청시간</button>
+        </div>
+        <div class="inv-seg" id="pc-fcx-view">
+          <button data-v="prod" onclick="fcxSet('view','prod')">상품별</button>
+          <button data-v="camp" onclick="fcxSet('view','camp')">캠페인별</button>
+        </div>
+      </div>
+    </div>
+    <div class="inv-meta" id="pc-fcx-meta" style="margin-bottom:10px">캠페인 현황 데이터를 기다리는 중…</div>
+    <div class="metrics" id="pc-fcx-kpi"></div>
+    <div class="tbl-wrap inv-tbl-wrap" id="pc-fcx-table"></div>
+    <div class="inv-top" style="margin:16px 0 6px"><div class="card-title" id="pc-fcx-ch-title" style="margin-bottom:0;font-size:13px">상품 하루 노출</div>
+      <select id="pc-fcx-prod" onchange="fcxSet('prod',this.value)" style="font-size:12px;padding:4px 6px"></select></div>
+    <div style="position:relative;height:300px"><canvas id="ch-fcx"></canvas></div>
+    <div class="inv-hint" id="pc-fcx-hint" style="margin-top:4px"></div>
+  </div>
+
   <div class="card" id="pc-top-card" data-fold="pc-top">
     <div class="inv-top" style="margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0">📉 TOP20 소진 추이 — 세팅 대비 실제 소진 · 미소진</div>
@@ -9874,6 +9898,268 @@ async function tasResetView() {
   const firstTab = document.querySelector(".tab[onclick*=\"go('inventory'\"]");
   if (firstTab) firstTab.click();
   tasSlotStart();
+})();
+</script>
+<script>
+// ════════════════════════════════════════════════════════
+// 🔮 오늘 · 기간 달성 예측 (실소진 기반 인벤토리 탭)
+//   ① 오늘: 지금까지 집행 ÷ 평소 이 시각까지 나가는 비율 → 오늘 마감 예상 → 오늘 필요와 비교
+//   ② 기간: 상품 하루 예상 = 최근 4주 같은 요일 실노출 × 작년 같은 시기 흐름(계절 지수)
+//           → 상품 하루 필요와 비교한 여유 비율 × 캠페인 최근 7일 소진율로 남은 기간 달성률을 추정
+//   작년 흐름: TAS 상품_일별(작년 실노출) 또는 VOD 시청시간(작년) 중 고를 수 있어요
+//   시간대 비율: Athena 광고 로그 2026-10-27~11-23 상품별 · 평일/주말 누적 노출 비율
+// ════════════════════════════════════════════════════════
+const FCX = { src: 'tas', view: 'prod', prod: '', chart: null, cache: null };
+const FCX_VOD_FROM = invDay(2025, 10, 1);   // VOD 시청시간(천 시간) 2025-10-01 ~ 2026-03-15
+const FCX_VOD = [2680,3004,3485,2859,2766,2768,3354,3847,4592,3547,3579,4100,3218,2851,3331,3213,2982,3505,3973,3237,3010,3669,4135,3380,3861,4094,3117,3173,3796,3614,3137,3773,4037,3076,3032,3787,3714,3570,4042,4288,3283,2975,3626,3869,3632,3979,4357,3361,3034,3751,3744,3620,3839,4143,3244,2959,3664,3738,3378,3596,3955,3176,2880,3998,3978,3532,3545,3622,2882,2686,3610,3358,2917,3377,3565,2822,2676,3453,3270,2825,3146,3297,2665,2526,3009,3660,3033,3116,3328,2746,2542,3118,3939,3207,3441,3607,2838,2648,3528,3379,3000,3306,3716,2983,2848,3642,3463,3152,3244,3547,2870,2793,3731,3245,3028,3353,3719,2960,2830,2885,2871,2965,3312,3788,3107,2901,2846,2850,3061,3497,3984,2964,2775,2803,2751,2961,3230,3303,2963,2714,3461,2847,2922,3068,3483,2804,2698,2632,2725,2871,2942,3241,3743,2547,2538,2597,2890,3119,3678,2865,2635,2655,2803,2930,3135,3606];
+// 시간(0~23시) 끝까지 누적 비율 · wd=평일 · we=주말
+const FCX_CURVE = {
+  _all:      { wd: [.069,.111,.138,.156,.170,.185,.204,.231,.261,.305,.342,.392,.447,.500,.542,.583,.619,.664,.714,.785,.852,.909,.957,1], we: [.062,.100,.124,.140,.153,.164,.177,.196,.223,.260,.300,.347,.393,.444,.497,.543,.584,.631,.678,.751,.827,.912,.963,1] },
+  'TOP20':   { wd: [.055,.090,.113,.129,.140,.151,.165,.186,.211,.244,.281,.327,.381,.433,.482,.529,.574,.622,.685,.764,.844,.911,.964,1], we: [.061,.100,.127,.145,.158,.169,.183,.202,.234,.277,.328,.387,.452,.516,.577,.640,.706,.756,.809,.867,.919,.964,.988,1] },
+  '베이직인스트림': { wd: [.082,.141,.182,.212,.237,.261,.289,.327,.366,.436,.486,.554,.631,.694,.742,.784,.815,.844,.876,.925,.955,.974,.989,1], we: [.069,.120,.157,.182,.203,.221,.240,.266,.299,.346,.393,.449,.500,.550,.598,.631,.657,.686,.716,.808,.916,.985,.996,1] },
+  '시청데모': { wd: [.048,.086,.111,.127,.140,.151,.166,.186,.215,.247,.281,.320,.363,.407,.449,.493,.536,.580,.644,.761,.885,.969,.998,1], we: [.075,.110,.135,.152,.164,.175,.186,.202,.226,.260,.297,.343,.389,.445,.506,.571,.635,.696,.814,.918,.973,1,1,1] },
+  '스플래시': { wd: [.024,.039,.048,.054,.060,.068,.083,.107,.140,.176,.211,.252,.301,.343,.382,.423,.465,.516,.612,.705,.795,.875,.941,1], we: [.035,.058,.072,.082,.090,.099,.111,.131,.160,.195,.234,.275,.319,.368,.435,.500,.562,.618,.673,.733,.798,.879,.945,1] },
+  '아웃스트림': { wd: [.041,.066,.081,.091,.100,.109,.126,.153,.185,.221,.259,.303,.355,.401,.443,.486,.530,.582,.648,.718,.790,.864,.936,1], we: [.046,.075,.093,.105,.114,.123,.136,.156,.184,.219,.257,.298,.343,.388,.433,.481,.528,.577,.632,.691,.756,.850,.932,1] },
+  '이미지배너': { wd: [.145,.224,.268,.292,.309,.330,.366,.421,.477,.525,.571,.624,.687,.735,.775,.810,.845,.887,.947,.977,.992,.999,1,1], we: [.177,.282,.323,.344,.360,.376,.399,.437,.489,.548,.609,.675,.745,.843,.941,.968,.981,.992,1,1,1,1,1,1] },
+  '일시정지': { wd: [.115,.178,.213,.235,.251,.266,.290,.334,.390,.457,.535,.624,.722,.811,.870,.897,.914,.928,.942,.956,.970,.982,.992,1], we: [.119,.189,.229,.253,.269,.283,.299,.327,.375,.446,.534,.631,.733,.809,.848,.859,.868,.878,.888,.900,.912,.928,.956,1] },
+  '기타':     { wd: [.055,.077,.087,.094,.099,.105,.115,.128,.139,.162,.172,.200,.220,.259,.285,.323,.354,.399,.443,.536,.639,.747,.867,1], we: [.035,.051,.059,.063,.067,.070,.074,.080,.087,.102,.112,.130,.147,.173,.211,.251,.282,.329,.381,.466,.565,.752,.893,1] },
+};
+const FCX_CURVE_NOTE = 'Athena 광고 로그 2026-10-27~11-23';
+const FCX_NONVIDEO = /^(KBO|KBL|하우스\(내부\)|스플래시|아웃스트림|이미지배너|일시정지)$/;
+const FCX_EARLY = 0.12;   // 하루치가 이만큼도 안 나간 이른 시각이면 시간대 비율로 늘리지 않아요
+
+function fcxSet(k, v) { FCX[k] = v; if (k !== 'prod') FCX.cache = null; fcxRender(); }
+const fcxIso2Day = s => { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? invDay(+m[1], +m[2], +m[3]) : null; };
+const fcxWd = d => invDate(d).getUTCDay();
+
+// TAS 기준 시각 (캠페인 현황의 '오늘 집행'이 몇 시 값인지)
+function fcxAsOf() {
+  const m = String(ST.lastUpdated || '').match(/(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return { day: fcxIso2Day(m[1]), h: +m[2] + +m[3] / 60, label: `${m[2].padStart(2, '0')}:${m[3]}` };
+}
+function fcxFrac(prod, day, h) {
+  const c = FCX_CURVE[prod] || FCX_CURVE._all, a = invWeekend(day) ? c.we : c.wd;
+  const i = Math.min(23, Math.floor(h)), prev = i > 0 ? a[i - 1] : 0;
+  return prev + (a[i] - prev) * (h - i);
+}
+
+// 작년 흐름 원천: d(일 번호) → 값 또는 null
+function fcxSeries(prod) {
+  if (FCX.src === 'vod') return d => { const v = FCX_VOD[d - FCX_VOD_FROM]; return v > 0 ? v : null; };
+  const P = DACT.pd; if (!P) return () => null;
+  const one = P.by[prod];
+  const ok = one && P.dates.filter(s => (one[s] || 0) > 0).length >= P.dates.length * 0.6;
+  if (ok) return d => { const v = one[invISO(d)]; return v > 0 ? v : null; };
+  // 작년 실적이 듬성듬성한 상품은 영상 상품 전체 흐름을 써요
+  const vids = P.prods.filter(p => !FCX_NONVIDEO.test(p));
+  return d => { const k = invISO(d); const v = vids.reduce((s, p) => s + (P.by[p][k] || 0), 0); return v > 0 ? v : null; };
+}
+function fcxMean7(f, x) {
+  let s = 0, n = 0; for (let i = -3; i <= 3; i++) { const v = f(x + i); if (v) { s += v; n++; } }
+  return n >= 4 ? s / n : null;
+}
+// 작년 비교일: 보통은 364일 전(같은 요일) · 날짜가 고정된 공휴일(12/24·25·31, 1/1)은 작년 같은 날짜
+const FCX_FIXED = ['12-24', '12-25', '12-31', '01-01'];
+function fcxLyDay(D) {
+  const iso = invISO(D);
+  if (FCX_FIXED.includes(iso.slice(5))) return fcxIso2Day((+iso.slice(0, 4) - 1) + iso.slice(4));
+  return D - 364;
+}
+// 계절 지수 계산기: S(D) = 작년(D−364) ÷ (작년 기준주 7일 평균 × 그 요일의 평소 비율)
+function fcxSeason(prod, t) {
+  const f = fcxSeries(prod), base = fcxMean7(f, t - 361);
+  if (!base) return { ok: false, S: () => 1, ly: () => null, base: null };
+  const wr = [0, 0, 0, 0, 0, 0, 0], wn = [0, 0, 0, 0, 0, 0, 0];
+  for (let x = t - 364 - 35; x <= t - 364 + 120; x++) {
+    const v = f(x), m = v ? fcxMean7(f, x) : null; if (!v || !m) continue;
+    const w = fcxWd(x); wr[w] += v / m; wn[w]++;
+  }
+  const wdr = w => wn[w] ? wr[w] / wn[w] : 1;
+  const S = D => {
+    const x = fcxLyDay(D), v = f(x);
+    if (v) return v / (base * wdr(fcxWd(x)));
+    const m = fcxMean7(f, x); return m ? m / base : 1;
+  };
+  return { ok: true, S, ly: D => f(fcxLyDay(D)), base, scale: D => { const v = f(fcxLyDay(D)); return v ? v / base : null; } };
+}
+// 최근 4주 같은 요일 평균 실노출 (TAS 상품_일별)
+function fcxRecentWd(prod, t) {
+  const P = DACT.pd; if (!P || !P.by[prod]) return null;
+  const out = [];
+  for (let w = 0; w < 7; w++) {
+    const vs = []; for (let x = t - 28; x < t; x++) if (fcxWd(x) === w) { const v = P.by[prod][invISO(x)] || 0; if (v > 0) vs.push(v); }
+    out[w] = vs.length ? vs.reduce((a, v) => a + v, 0) / vs.length : 0;
+  }
+  return out;
+}
+
+function fcxBuild() {
+  const t = invToday(), to = Math.max(t, PACE.to || t), asOf = fcxAsOf();
+  const rows = paceFiltered().filter(r => r.end >= t);
+  const isToday = !!(asOf && asOf.day === t);
+  const byProd = {};
+  rows.forEach(r => { (byProd[r.big] = byProd[r.big] || []).push(r); });
+  const lastEnd = Math.max(to, ...rows.map(r => r.end));
+  const prods = {};
+  Object.keys(byProd).forEach(p => {
+    const list = byProd[p], rw = fcxRecentWd(p, t), sea = fcxSeason(p, t);
+    const n = lastEnd - t + 1, dem = new Array(n).fill(0), sup = new Array(n).fill(null);
+    list.forEach(r => { for (let d = Math.max(r.first, t); d <= r.end; d++) dem[d - t] += r.need; });
+    if (rw) for (let i = 0; i < n; i++) sup[i] = rw[fcxWd(t + i)] * sea.S(t + i);
+    const cpmW = list.reduce((s, r) => s + r.need * (r.cpx || 0), 0), cpmN = list.reduce((s, r) => s + (r.cpx ? r.need : 0), 0);
+    prods[p] = { p, list, rw, sea, dem, sup, cpm: cpmN ? cpmW / cpmN : 0, frac: isToday ? fcxFrac(p, t, asOf.h) : null,
+      cov: i => sup[i] === null || !dem[i] ? 1 : Math.min(1, sup[i] / dem[i]) };
+  });
+  // 캠페인별 (일별 집행·일예산은 캠페인 현황 원본 행에서 가져와요)
+  const stById = {}; (ST.rows || []).forEach(x => { if (x.id) stById[x.id] = x; });
+  const camps = rows.map(r => {
+    const P = prods[r.big], frac = P.frac, src = stById[r.id] || {};
+    // 최근 7일 소진율: 집행금액 ÷ (지금 일 필요 × CPM) — 타겟·빈도 제한 등으로 늘 덜 나가는 캠페인을 잡아요
+    let sp = 0, nd = 0;
+    for (let x = Math.max(r.start, t - 7); x < t; x++) { const v = (src.dailyByDate || {})[invISO(x)]; if (v !== undefined && v !== null) { sp += v; nd++; } }
+    const want = r.need * (r.cpx || 0) / 1000;
+    const fr = nd >= 2 && want > 0 ? Math.max(0, Math.min(1, sp / (nd * want))) : null;
+    const onToday = r.first <= t;
+    const capImps = r.cpx && src.dailyBudget ? src.dailyBudget / r.cpx * 1000 : null;
+    let todayExp = null, early = false;
+    if (onToday) {
+      if (frac !== null && frac >= FCX_EARLY) todayExp = r.todayImps / frac;
+      else { early = true; todayExp = r.need * P.cov(0) * (fr ?? 1); }
+      if (capImps) todayExp = Math.min(todayExp, capImps * 1.02);
+      todayExp = Math.max(todayExp, r.todayImps);
+    }
+    const todayRate = onToday && r.need > 0 ? todayExp / r.need : null;
+    const left = Math.max(0, r.remain - (todayExp || 0)), futDays = r.end - Math.max(r.first, t + 1) + 1;
+    let fut = 0;
+    if (futDays > 0) { const per = left / futDays; for (let d = Math.max(r.first, t + 1); d <= r.end; d++) fut += per * P.cov(d - t) * (fr ?? 1); }
+    const expTot = r.before + (todayExp || 0) + fut;
+    return { r, fr, todayExp, todayRate, early, expTot, rate: r.T ? expTot / r.T : null, short: Math.max(0, r.T - expTot) };
+  });
+  return { t, to, asOf, isToday, prods, camps };
+}
+
+const fcxRoom = rate => rate === null || rate === undefined ? '<span style="color:var(--text3)">—</span>'
+  : rate >= 1 ? `<span class="inv-tag" style="background:#e7f6ec;color:#15803d" title="예상 공급 ÷ 필요">여유 ${rate >= 10 ? '10배+' : rate.toFixed(1) + '배'}</span>`
+  : rate >= 0.9 ? `<span class="inv-tag" style="background:#fff4e0;color:#b45309">빠듯 ${(rate * 100).toFixed(0)}%</span>`
+  : `<span class="inv-tag" style="background:#fdecec;color:var(--red)">부족 ${(rate * 100).toFixed(0)}%</span>`;
+const fcxVerdict = (rate, okAt = 0.99, warnAt = 0.95) => rate === null || rate === undefined ? '<span style="color:var(--text3)">—</span>'
+  : rate >= okAt ? `<span class="inv-tag" style="background:#e7f6ec;color:#15803d">달성 ${Math.min(rate * 100, 999).toFixed(0)}%</span>`
+  : rate >= warnAt ? `<span class="inv-tag" style="background:#fff4e0;color:#b45309">빠듯 ${(rate * 100).toFixed(0)}%</span>`
+  : `<span class="inv-tag" style="background:#fdecec;color:var(--red)">미달 ${(rate * 100).toFixed(0)}%</span>`;
+
+function fcxRender() {
+  const card = document.getElementById('pc-fcx-card'); if (!card) return;
+  const meta = document.getElementById('pc-fcx-meta'), tbl = document.getElementById('pc-fcx-table'), kpi = document.getElementById('pc-fcx-kpi');
+  document.querySelectorAll('#pc-fcx-src button').forEach(b => b.classList.toggle('on', b.dataset.v === FCX.src));
+  document.querySelectorAll('#pc-fcx-view button').forEach(b => b.classList.toggle('on', b.dataset.v === FCX.view));
+  if (!ST.rows || !ST.rows.length || !PACE.rows) { meta.textContent = '캠페인 현황 데이터를 기다리는 중…'; return; }
+  if (!DACT.loaded) {
+    meta.textContent = DACT.err ? `상품 하루 실노출(TAS 성연령 실적 · 상품_일별)을 불러오지 못했어요 — ${DACT.err}` : '상품 하루 실노출(TAS 성연령 실적 · 상품_일별)을 불러오는 중…';
+    if (!DACT.err) { const p = dactLoad(false); if (p && p.then && !FCX.waiting) { FCX.waiting = true; p.then(() => { FCX.waiting = false; fcxRender(); }); } }
+    return;
+  }
+  const B = fcxBuild(); FCX.last = B;
+  const amt = PACE.metric === 'amt', U = amt ? '금액' : '노출';
+  const Fp = (P, v) => v === null || v === undefined ? '—' : amt ? invW(v * P.cpm / 1000) : invN(v);
+  const Fc = (r, v) => v === null || v === undefined ? '—' : amt ? (r.cpx ? invW(v * r.cpx / 1000) : '—') : invN(v);
+  const t = B.t, srcName = FCX.src === 'vod' ? '작년 VOD 시청시간' : '작년 TAS 상품 실노출';
+  meta.innerHTML = (B.isToday ? `오늘 집행은 <b>TAS ${B.asOf.label}</b> 기준이에요 · 평소 이 시각까지 하루치의 몇 %가 나가는지(${FCX_CURVE_NOTE})로 오늘 마감을 추정해요`
+      : `<span style="color:var(--red)">TAS 기준 시각이 오늘이 아니라 오늘 마감은 최근 소진율로만 추정해요</span>`) +
+    `<br>기간 예측: 상품 하루 예상 = 최근 4주 같은 요일 실노출 × <b>${srcName}</b> 흐름 · 기간 = 오늘 ~ ${invISO(B.to)} (위 보기 설정 기간) · 금액은 CPM으로 환산해요`;
+
+  const pk = Object.keys(B.prods).sort((a, b) => B.prods[b].dem[0] - B.prods[a].dem[0] || B.prods[b].list.length - B.prods[a].list.length);
+  if (!FCX.prod || !B.prods[FCX.prod]) FCX.prod = B.prods['TOP20'] ? 'TOP20' : pk[0] || '';
+  const n = B.to - t + 1;
+  // KPI (전체)
+  const tNeed = B.camps.reduce((s, c) => s + (c.r.first <= t ? (amt ? c.r.need * (c.r.cpx || 0) / 1000 : c.r.need) : 0), 0);
+  const tExp = B.camps.reduce((s, c) => s + (c.todayExp ? (amt ? c.todayExp * (c.r.cpx || 0) / 1000 : c.todayExp) : 0), 0);
+  const tSo = B.camps.reduce((s, c) => s + (c.r.first <= t ? (amt ? c.r.todayImps * (c.r.cpx || 0) / 1000 : c.r.todayImps) : 0), 0);
+  const riskT = B.camps.filter(c => c.todayRate !== null && c.todayRate < 0.95).length;
+  const riskP = B.camps.filter(c => c.rate !== null && c.rate < 0.95).length;
+  const FF = v => amt ? invW(v) : invN(v);
+  kpi.innerHTML = `
+    <div class="metric"><div class="metric-label">오늘 지금까지${B.isToday ? ` (${B.asOf.label})` : ''}</div><div class="metric-value">${FF(tSo)}</div>
+      <div class="metric-sub">오늘 필요 ${FF(tNeed)}의 ${tNeed ? (tSo / tNeed * 100).toFixed(0) : 0}% · 평소 이 시각엔 ${B.isToday ? (fcxFrac('_all', t, B.asOf.h) * 100).toFixed(0) + '%' : '—'}</div></div>
+    <div class="metric"><div class="metric-label">오늘 마감 예상 ${U}</div><div class="metric-value" style="color:${tExp < tNeed * 0.97 ? 'var(--red)' : 'inherit'}">${FF(tExp)}</div>
+      <div class="metric-sub">오늘 필요 대비 ${tNeed ? (tExp / tNeed * 100).toFixed(0) : 0}%</div></div>
+    <div class="metric"><div class="metric-label">오늘 미달 예상 캠페인</div><div class="metric-value">${riskT}건</div><div class="metric-sub">오늘 필요의 95% 아래</div></div>
+    <div class="metric"><div class="metric-label">기간 미달 예상 캠페인</div><div class="metric-value">${riskP}건</div><div class="metric-sub">종료일까지 목표의 95% 아래 · 부족 ${FF(B.camps.filter(c => c.rate !== null && c.rate < 0.95).reduce((s, c) => s + (amt ? c.short * (c.r.cpx || 0) / 1000 : c.short), 0))}</div></div>`;
+
+  let h = '';
+  if (FCX.view === 'prod') {
+    h = `<table class="inv-table"><thead><tr><th class="inv-stick">상품</th><th>캠페인</th><th>오늘 필요</th><th>지금까지</th><th title="평소 이 시각까지 하루치의 몇 %가 나가는지">평소 이 시각</th><th>오늘 마감 예상</th><th>오늘 판정</th>
+      <th title="최근 4주 같은 요일 평균 실노출 (TAS)">평소 ${invDOW(t)}요일 실노출</th><th title="작년 같은 요일 (364일 전) 실노출 · TAS 상품_일별">작년 같은 날 실노출</th><th title="최근 4주 같은 요일 × 작년 흐름">오늘 예상 공급</th>
+      <th>기간 필요 합</th><th>기간 예상 공급</th><th title="날짜별 (예상 공급 ÷ 필요) 중 가장 낮은 날">가장 빠듯한 날</th><th>기간 판정</th></tr></thead><tbody>`;
+    pk.forEach(p => {
+      const P = B.prods[p], cs = B.camps.filter(c => c.r.big === p);
+      const need0 = P.dem[0], so = cs.reduce((s, c) => s + (c.r.first <= t ? c.r.todayImps : 0), 0), ex = cs.reduce((s, c) => s + (c.todayExp || 0), 0);
+      let dn = 0, sn = 0, worst = null; for (let i = 0; i < n; i++) { dn += P.dem[i]; if (P.sup[i] !== null) { sn += P.sup[i]; if (P.dem[i] > 0) { const c = P.sup[i] / P.dem[i]; if (!worst || c < worst.c) worst = { c, d: t + i }; } } }
+      const lyT = DACT.pd && DACT.pd.by[p] ? DACT.pd.by[p][invISO(fcxLyDay(t))] : null;
+      const hasSup = P.sup[0] !== null;
+      h += `<tr><td class="inv-stick"><a href="#" onclick="fcxSet('prod',${invEsc(JSON.stringify(p))});return false">${invEsc(p)}</a></td><td class="num">${P.list.length}</td>
+        <td class="num">${Fp(P, need0)}</td><td class="num">${Fp(P, so)}</td><td class="num">${P.frac !== null ? (P.frac * 100).toFixed(0) + '%' : '—'}</td>
+        <td class="num b">${Fp(P, ex)}</td><td>${fcxVerdict(need0 ? ex / need0 : null, 0.97, 0.9)}</td>
+        <td class="num">${P.rw ? Fp(P, P.rw[fcxWd(t)]) : '—'}</td><td class="num">${lyT ? Fp(P, lyT) : '—'}</td><td class="num">${hasSup ? Fp(P, P.sup[0]) : '—'}</td>
+        <td class="num">${Fp(P, dn)}</td><td class="num">${hasSup ? Fp(P, sn) : '—'}</td>
+        <td class="num">${worst ? `${invMD(worst.d)}(${invDOW(worst.d)}) ${(worst.c * 100).toFixed(0)}%` : '—'}</td><td>${hasSup && dn ? fcxRoom(sn / dn) : '<span style="color:var(--text3)">실적 없음</span>'}</td></tr>`;
+    });
+    h += '</tbody></table>';
+  } else {
+    const cs = B.camps.slice().sort((a, b) => (a.rate ?? 9) - (b.rate ?? 9));
+    h = `<table class="inv-table"><thead><tr><th class="inv-stick">청약명</th><th>상품</th><th>기간</th><th>오늘 필요</th><th>지금까지</th><th>오늘 마감 예상</th><th>오늘 판정</th>
+      <th title="최근 7일 집행 ÷ (지금 일 필요 × 7일) · 최대 100%">최근 7일 소진율</th><th>목표</th><th>어제까지</th><th>종료일까지 예상</th><th>부족 예상</th><th>기간 판정</th></tr></thead><tbody>`;
+    cs.forEach(c => {
+      const r = c.r;
+      h += `<tr><td class="inv-stick" title="${invEsc(r.camp)}">${invEsc(r.name)}</td><td>${invEsc(r.big)}</td><td class="num">${invMD(r.start)}~${invMD(r.end)}</td>
+        <td class="num">${r.first <= t ? Fc(r, r.need) : '시작 전'}</td><td class="num">${r.first <= t ? Fc(r, r.todayImps) : '—'}</td>
+        <td class="num b">${c.todayExp !== null ? Fc(r, c.todayExp) + (c.early ? ' <span style="color:var(--text3);font-size:10px" title="이른 시각이라 최근 소진율로 추정">추정</span>' : '') : '—'}</td><td>${fcxVerdict(c.todayRate, 0.97, 0.9)}</td>
+        <td class="num">${c.fr === null ? '—' : (c.fr * 100).toFixed(0) + '%'}</td><td class="num">${Fc(r, r.T)}</td><td class="num">${Fc(r, r.before)}</td>
+        <td class="num b">${Fc(r, c.expTot)}</td><td class="num" style="color:${c.short > 0 ? 'var(--red)' : 'var(--text3)'}">${c.short > 0 ? Fc(r, c.short) : '0'}</td><td>${fcxVerdict(c.rate)}</td></tr>`;
+    });
+    h += '</tbody></table>';
+  }
+  tbl.innerHTML = h;
+  fcxRenderChart(B);
+}
+
+function fcxRenderChart(B) {
+  const sel = document.getElementById('pc-fcx-prod'), cv = document.getElementById('ch-fcx'), hint = document.getElementById('pc-fcx-hint');
+  if (!sel || !cv) return;
+  const pk = Object.keys(B.prods);
+  sel.innerHTML = pk.map(p => `<option value="${invEsc(p)}"${p === FCX.prod ? ' selected' : ''}>${invEsc(p)}</option>`).join('');
+  const P = B.prods[FCX.prod]; if (!P) return;
+  const amt = PACE.metric === 'amt', k = amt ? P.cpm / 1000 : 1, t = B.t;
+  const from = t - 28, to = Math.max(B.to, t + 41), days = []; for (let d = from; d <= to; d++) days.push(d);
+  const pd = DACT.pd && DACT.pd.by[FCX.prod];
+  const act = days.map(d => d < t && pd ? (pd[invISO(d)] || null) && pd[invISO(d)] * k : null);
+  const sup = days.map(d => d >= t && P.sup[d - t] !== undefined && P.sup[d - t] !== null ? P.sup[d - t] * k : null);
+  const dem = days.map(d => d >= t && P.dem[d - t] !== undefined ? P.dem[d - t] * k : null);
+  // 작년 같은 날을 올해 수준으로 맞춰 그려요 (최근 4주 평균 ÷ 작년 기준주 평균)
+  const twAvg = P.rw ? P.rw.reduce((a, v) => a + v, 0) / 7 : null;
+  const ly = days.map(d => { const s = P.sea.scale ? P.sea.scale(d) : null; return s !== null && twAvg ? s * twAvg * k : null; });
+  document.getElementById('pc-fcx-ch-title').textContent = `${FCX.prod} 하루 ${amt ? '금액' : '노출'} — 지난 4주 실적 · 앞으로 예측 · 필요`;
+  hint.innerHTML = `파랑 막대 = 실제(TAS) · 초록 점선 = 예상 공급(최근 4주 같은 요일 × ${FCX.src === 'vod' ? '작년 시청시간' : '작년 실노출'} 흐름) · 빨강 선 = 실소진 기준 하루 필요 · 회색 = 작년 같은 요일(올해 수준으로 환산)` +
+    (P.sea.ok ? '' : ' · <span style="color:var(--red)">작년 자료가 없어 계절 흐름 없이 최근 4주 기준만 써요</span>');
+  const F = v => amt ? '₩' + invShort(v) : invShort(v);
+  const data = { labels: days.map(d => `${invMD(d)}(${invDOW(d)})`), datasets: [
+    { type: 'bar', label: '실제', data: act, backgroundColor: 'rgba(91,140,255,.75)', order: 3 },
+    { type: 'line', label: '예상 공급', data: sup, borderColor: '#16a34a', borderDash: [5, 4], pointRadius: 0, borderWidth: 2, tension: .2, order: 1 },
+    { type: 'line', label: '하루 필요', data: dem, borderColor: '#dc2626', pointRadius: 0, borderWidth: 2, stepped: true, order: 0 },
+    { type: 'line', label: '작년 같은 요일 (환산)', data: ly, borderColor: '#9ca3af', pointRadius: 0, borderWidth: 1.5, tension: .2, order: 2 },
+  ] };
+  const opt = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+      tooltip: { callbacks: { label: c => c.raw === null || c.raw === undefined ? null : `${c.dataset.label}: ${amt ? invW(c.raw) : invN(c.raw)}` } } },
+    scales: { y: { beginAtZero: true, ticks: { callback: v => F(v) } }, x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14, font: { size: 10 } } } } };
+  if (FCX.chart) { FCX.chart.data = data; FCX.chart.options = opt; FCX.chart.update('none'); }
+  else FCX.chart = new Chart(cv.getContext('2d'), { type: 'bar', data, options: opt });
+}
+
+// 실소진 탭이 다시 그려질 때 같이 그려요
+(function () {
+  const orig = paceRender;
+  paceRender = function () { orig.apply(this, arguments); try { fcxRender(); } catch (e) { console.warn('달성 예측 계산 실패', e); } };
 })();
 </script>
 <script>
