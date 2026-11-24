@@ -8551,6 +8551,8 @@ function dactLoad(force) {
     google.script.run.withSuccessHandler(d => {
       DACT.camp = dactParse(d && d.campaign); DACT.prod = dactParse(d && d.product); DACT.nv = nvParse(d && d.nonvideo);
       DACT.pd = dactParsePD(d && d.prodDaily);
+      DACT.pds = dactParsePD(d && d.prodSpend);   // 날짜 × 상품 하루 집행금액 (없으면 null)
+      if (typeof fcxApplyHourTab === 'function') fcxApplyHourTab(d && d.hourCurve);
       DACT.hist = dactParseRows(d && d.history).map(x => ({
         id: String(x['캠페인 ID'] || ''), tmpl: String(x['템플릿'] || ''), name: String(x['캠페인명'] || ''), prod: String(x['상품'] || ''),
         order: String(x['주문 ID'] || ''), first: String(x['첫 집행일'] || ''), last: String(x['마지막 집행일'] || ''),
@@ -9924,7 +9926,23 @@ const FCX_CURVE = {
   '일시정지': { wd: [.115,.178,.213,.235,.251,.266,.290,.334,.390,.457,.535,.624,.722,.811,.870,.897,.914,.928,.942,.956,.970,.982,.992,1], we: [.119,.189,.229,.253,.269,.283,.299,.327,.375,.446,.534,.631,.733,.809,.848,.859,.868,.878,.888,.900,.912,.928,.956,1] },
   '기타':     { wd: [.055,.077,.087,.094,.099,.105,.115,.128,.139,.162,.172,.200,.220,.259,.285,.323,.354,.399,.443,.536,.639,.747,.867,1], we: [.035,.051,.059,.063,.067,.070,.074,.080,.087,.102,.112,.130,.147,.173,.211,.251,.282,.329,.381,.466,.565,.752,.893,1] },
 };
-const FCX_CURVE_NOTE = 'Athena 광고 로그 2026-10-27~11-23';
+let FCX_CURVE_NOTE = 'Athena 광고 로그 2026-10-27~11-23';
+// 'TAS 성연령 실적' 시트의 시간대_비율 탭(매주 월요일 갱신)이 있으면 위 기본값 대신 그 값을 써요
+function fcxApplyHourTab(v) {
+  if (!v || v.length < 5) return;
+  const hi = v.findIndex(r => String(r[0] || '').trim() === '상품'); if (hi < 0) return;
+  const per = v.find(r => String(r[0] || '').trim() === '기간');
+  let n = 0;
+  v.slice(hi + 1).forEach(r => {
+    const p = String(r[0] || '').trim(), dt = String(r[1] || '').trim(), k = dt === '주말' ? 'we' : dt === '평일' ? 'wd' : '';
+    const a = r.slice(3, 27).map(x => Number(x));
+    if (!p || !k || a.length !== 24 || a.some(x => !isFinite(x)) || Math.abs(a[23] - 1) > 0.01) return;
+    (FCX_CURVE[p] = FCX_CURVE[p] || {})[k] = a; n++;
+  });
+  if (n && per) FCX_CURVE_NOTE = `Athena 광고 로그 ${String(per[1] || '').slice(0, 10)}~${String(per[3] || '').slice(0, 10)} · 시간대_비율 탭`;
+  // 평일·주말 중 한쪽만 있는 상품은 쓰지 않아요
+  Object.keys(FCX_CURVE).forEach(p => { if (!FCX_CURVE[p].wd || !FCX_CURVE[p].we) delete FCX_CURVE[p]; });
+}
 const FCX_NONVIDEO = /^(KBO|KBL|하우스\(내부\)|스플래시|아웃스트림|이미지배너|일시정지)$/;
 const FCX_EARLY = 0.12;   // 하루치가 이만큼도 안 나간 이른 시각이면 시간대 비율로 늘리지 않아요
 
@@ -10089,18 +10107,19 @@ function fcxRender() {
   let h = '';
   if (FCX.view === 'prod') {
     h = `<table class="inv-table"><thead><tr><th class="inv-stick">상품</th><th>캠페인</th><th>오늘 필요</th><th>지금까지</th><th title="평소 이 시각까지 하루치의 몇 %가 나가는지">평소 이 시각</th><th>오늘 마감 예상</th><th>오늘 판정</th>
-      <th title="최근 4주 같은 요일 평균 실노출 (TAS)">평소 ${invDOW(t)}요일 실노출</th><th title="작년 같은 요일 (364일 전) 실노출 · TAS 상품_일별">작년 같은 날 실노출</th><th title="최근 4주 같은 요일 × 작년 흐름">오늘 예상 공급</th>
+      <th title="최근 4주 같은 요일 평균 실노출 (TAS)">평소 ${invDOW(t)}요일 실노출</th><th title="작년 같은 요일 (364일 전, 고정 공휴일은 같은 날짜) · TAS 상품_일별(금액 보기면 상품_일별금액)">작년 같은 날 ${amt ? '집행' : '실노출'}</th><th title="최근 4주 같은 요일 × 작년 흐름">오늘 예상 공급</th>
       <th>기간 필요 합</th><th>기간 예상 공급</th><th title="날짜별 (예상 공급 ÷ 필요) 중 가장 낮은 날">가장 빠듯한 날</th><th>기간 판정</th></tr></thead><tbody>`;
     pk.forEach(p => {
       const P = B.prods[p], cs = B.camps.filter(c => c.r.big === p);
       const need0 = P.dem[0], so = cs.reduce((s, c) => s + (c.r.first <= t ? c.r.todayImps : 0), 0), ex = cs.reduce((s, c) => s + (c.todayExp || 0), 0);
       let dn = 0, sn = 0, worst = null; for (let i = 0; i < n; i++) { dn += P.dem[i]; if (P.sup[i] !== null) { sn += P.sup[i]; if (P.dem[i] > 0) { const c = P.sup[i] / P.dem[i]; if (!worst || c < worst.c) worst = { c, d: t + i }; } } }
       const lyT = DACT.pd && DACT.pd.by[p] ? DACT.pd.by[p][invISO(fcxLyDay(t))] : null;
+      const lyS = amt && DACT.pds && DACT.pds.by[p] ? DACT.pds.by[p][invISO(fcxLyDay(t))] : null;   // 작년 실제 집행금액이 있으면 그대로
       const hasSup = P.sup[0] !== null;
       h += `<tr><td class="inv-stick"><a href="#" onclick="fcxSet('prod',${invEsc(JSON.stringify(p))});return false">${invEsc(p)}</a></td><td class="num">${P.list.length}</td>
         <td class="num">${Fp(P, need0)}</td><td class="num">${Fp(P, so)}</td><td class="num">${P.frac !== null ? (P.frac * 100).toFixed(0) + '%' : '—'}</td>
         <td class="num b">${Fp(P, ex)}</td><td>${fcxVerdict(need0 ? ex / need0 : null, 0.97, 0.9)}</td>
-        <td class="num">${P.rw ? Fp(P, P.rw[fcxWd(t)]) : '—'}</td><td class="num">${lyT ? Fp(P, lyT) : '—'}</td><td class="num">${hasSup ? Fp(P, P.sup[0]) : '—'}</td>
+        <td class="num">${P.rw ? Fp(P, P.rw[fcxWd(t)]) : '—'}</td><td class="num">${lyS ? invW(lyS) : lyT ? Fp(P, lyT) : '—'}</td><td class="num">${hasSup ? Fp(P, P.sup[0]) : '—'}</td>
         <td class="num">${Fp(P, dn)}</td><td class="num">${hasSup ? Fp(P, sn) : '—'}</td>
         <td class="num">${worst ? `${invMD(worst.d)}(${invDOW(worst.d)}) ${(worst.c * 100).toFixed(0)}%` : '—'}</td><td>${hasSup && dn ? fcxRoom(sn / dn) : '<span style="color:var(--text3)">실적 없음</span>'}</td></tr>`;
     });
