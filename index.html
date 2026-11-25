@@ -10069,19 +10069,42 @@ function fcxBuild() {
     const fr = nd >= 2 && want > 0 ? Math.max(0, Math.min(1, sp / (nd * want))) : null;
     const onToday = r.first <= t;
     const capImps = r.cpx && src.dailyBudget ? src.dailyBudget / r.cpx * 1000 : null;
+    const cap = (capImps || r.need) * 1.02;   // 오늘 이 캠페인이 나갈 수 있는 최대 (TAS 일예산, 없으면 오늘 필요)
     let todayExp = null, early = false;
     if (onToday) {
       if (frac !== null && frac >= FCX_EARLY) todayExp = r.todayImps / frac;
       else { early = true; todayExp = r.need * P.cov(0) * (fr ?? 1); }
-      if (capImps) todayExp = Math.min(todayExp, capImps * 1.02);
-      todayExp = Math.max(todayExp, r.todayImps);
+      todayExp = Math.max(Math.min(todayExp, cap), r.todayImps);
     }
-    const todayRate = onToday && r.need > 0 ? todayExp / r.need : null;
-    const left = Math.max(0, r.remain - (todayExp || 0)), futDays = r.end - Math.max(r.first, t + 1) + 1;
+    const bonus = /보너스/.test(`${r.tmpl} ${r.name} ${r.camp}`);
+    return { r, P, fr, onToday, cap, bonus, todayExp, early, moved: 0 };
+  });
+  // 오늘 남은 시간의 상품 전체 흐름(지금까지 ÷ 평소 이 시각 비율)은 일예산을 다 쓴 캠페인 몫까지 포함해요.
+  // 일예산이 찬 캠페인은 더 못 나가니, 그 남는 양을 아직 여유가 있는 캠페인에 유가 → 보너스 순으로 나눠 줘요.
+  Object.keys(prods).forEach(p => {
+    const P = prods[p]; if (P.frac === null || P.frac < FCX_EARLY) return;
+    const cs = camps.filter(c => c.r.big === p && c.onToday);
+    const so = cs.reduce((s, c) => s + c.r.todayImps, 0), room = cs.reduce((s, c) => s + c.cap, 0);
+    const flow = Math.min(so / P.frac, room);
+    let left = flow - cs.reduce((s, c) => s + c.todayExp, 0);
+    P.flow = flow; P.so = so;
+    [cs.filter(c => !c.bonus), cs.filter(c => c.bonus)].forEach(tier => {
+      if (left <= 0) return;
+      const rooms = tier.map(c => Math.max(0, c.cap - c.todayExp)), R = rooms.reduce((a, v) => a + v, 0);
+      if (R <= 0) return;
+      const give = Math.min(left, R);
+      tier.forEach((c, i) => { const g = give * rooms[i] / R; c.todayExp += g; c.moved += g; });
+      left -= give;
+    });
+  });
+  camps.forEach(c => {
+    const r = c.r, P = c.P;
+    c.todayRate = c.onToday && r.need > 0 ? c.todayExp / r.need : null;
+    const left = Math.max(0, r.remain - (c.todayExp || 0)), futDays = r.end - Math.max(r.first, t + 1) + 1;
     let fut = 0;
-    if (futDays > 0) { const per = left / futDays; for (let d = Math.max(r.first, t + 1); d <= r.end; d++) fut += per * P.cov(d - t) * (fr ?? 1); }
-    const expTot = r.before + (todayExp || 0) + fut;
-    return { r, fr, todayExp, todayRate, early, expTot, rate: r.T ? expTot / r.T : null, short: Math.max(0, r.T - expTot) };
+    if (futDays > 0) { const per = left / futDays; for (let d = Math.max(r.first, t + 1); d <= r.end; d++) fut += per * P.cov(d - t) * (c.fr ?? 1); }
+    c.expTot = r.before + (c.todayExp || 0) + fut;
+    c.rate = r.T ? c.expTot / r.T : null; c.short = Math.max(0, r.T - c.expTot);
   });
   return { t, to, asOf, isToday, prods, camps };
 }
@@ -10112,7 +10135,7 @@ function fcxRender() {
   const Fp = (P, v) => v === null || v === undefined ? '—' : amt ? invW(v * P.cpm / 1000) : invN(v);
   const Fc = (r, v) => v === null || v === undefined ? '—' : amt ? (r.cpx ? invW(v * r.cpx / 1000) : '—') : invN(v);
   const t = B.t, srcName = FCX.src === 'vod' ? '작년 VOD 시청시간' : '작년 TAS 상품 실노출';
-  meta.innerHTML = (B.isToday ? `오늘 집행은 <b>TAS ${B.asOf.label}</b> 기준이에요 · 평소 이 시각까지 하루치의 몇 %가 나가는지(${FCX_CURVE_NOTE})로 오늘 마감을 추정해요`
+  meta.innerHTML = (B.isToday ? `오늘 집행은 <b>TAS ${B.asOf.label}</b> 기준이에요 · 평소 이 시각까지 하루치의 몇 %가 나가는지(${FCX_CURVE_NOTE})로 오늘 마감을 추정해요 · 일예산을 다 쓴 캠페인 몫은 아직 여유 있는 캠페인(유가 → 보너스 순)으로 넘겨서 계산해요`
       : `<span style="color:var(--red)">TAS 기준 시각이 오늘이 아니라 오늘 마감은 최근 소진율로만 추정해요</span>`) +
     `<br>기간 예측: 상품 하루 예상 = 최근 4주 같은 요일 실노출 × <b>${srcName}</b> 흐름 · 기간 = 오늘 ~ ${invISO(B.to)} (위 보기 설정 기간) · 금액은 CPM으로 환산해요` +
     (FCX.t30 && FCX.t30.on ? ` · <b>TOP30 확대</b> ${invEsc(FCX.t30.from)}~${invEsc(FCX.t30.to || '계속')} 동안 TOP20 예상 공급 ×${FCX.t30.x}` : '');
@@ -10163,7 +10186,7 @@ function fcxRender() {
       const r = c.r;
       h += `<tr><td class="inv-stick" title="${invEsc(r.camp)}">${invEsc(r.name)}</td><td>${invEsc(r.big)}</td><td class="num">${invMD(r.start)}~${invMD(r.end)}</td>
         <td class="num">${r.first <= t ? Fc(r, r.need) : '시작 전'}</td><td class="num">${r.first <= t ? Fc(r, r.todayImps) : '—'}</td>
-        <td class="num b">${c.todayExp !== null ? Fc(r, c.todayExp) + (c.early ? ' <span style="color:var(--text3);font-size:10px" title="이른 시각이라 최근 소진율로 추정">추정</span>' : '') : '—'}</td><td>${fcxVerdict(c.todayRate, 0.97, 0.9)}</td>
+        <td class="num b">${c.todayExp !== null ? Fc(r, c.todayExp) + (c.early ? ' <span style="color:var(--text3);font-size:10px" title="이른 시각이라 최근 소진율로 추정">추정</span>' : '') + (c.moved > 1 ? ` <span style="color:var(--text3);font-size:10px" title="일예산이 찬 다른 캠페인 몫으로 저녁에 더 나갈 것으로 본 양">+${invShort(c.moved)}</span>` : '') : '—'}</td><td>${fcxVerdict(c.todayRate, 0.97, 0.9)}</td>
         <td class="num">${c.fr === null ? '—' : (c.fr * 100).toFixed(0) + '%'}</td><td class="num">${Fc(r, r.T)}</td><td class="num">${Fc(r, r.before)}</td>
         <td class="num b">${Fc(r, c.expTot)}</td><td class="num" style="color:${c.short > 0 ? 'var(--red)' : 'var(--text3)'}">${c.short > 0 ? Fc(r, c.short) : '0'}</td><td>${fcxVerdict(c.rate)}</td></tr>`;
     });
