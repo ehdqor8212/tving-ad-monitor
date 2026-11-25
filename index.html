@@ -2081,6 +2081,11 @@ table.inv-table .inv-selcol{outline:2px solid rgba(232,17,45,.35);outline-offset
     <div class="inv-top" style="margin-bottom:8px">
       <div class="card-title" style="margin-bottom:0">🔮 오늘 · 기간 달성 예측</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label class="inv-lbl" style="display:flex;align-items:center;gap:4px;cursor:pointer" title="TOP20 큐레이션을 TOP30으로 넓힌 기간엔 TOP20 상품 예상 공급을 배율만큼 늘려요 (상위 30개 프로그램 요청 ÷ 상위 20개, 11/16~22 실측 평균 1.13배)">
+          <input type="checkbox" id="pc-fcx-t30" onchange="fcxT30Save()"> TOP30 확대</label>
+        <input type="date" id="pc-fcx-t30-from" onchange="fcxT30Save()" style="font-size:12px" title="확대 시작일">
+        <span class="inv-tilde">~</span><input type="date" id="pc-fcx-t30-to" onchange="fcxT30Save()" style="font-size:12px" title="확대 종료일 (비우면 계속)">
+        <input type="number" id="pc-fcx-t30-x" step="0.01" min="1" max="2" onchange="fcxT30Save()" style="width:58px;font-size:12px" title="TOP20 대비 공급 배율">
         <span class="inv-lbl">작년 흐름</span>
         <div class="inv-seg" id="pc-fcx-src">
           <button data-v="tas" onclick="fcxSet('src','tas')" title="TAS 리포트 상품별 하루 실노출 — 작년 같은 요일">작년 실노출 (TAS)</button>
@@ -9944,8 +9949,30 @@ function fcxApplyHourTab(v) {
   Object.keys(FCX_CURVE).forEach(p => { if (!FCX_CURVE[p].wd || !FCX_CURVE[p].we) delete FCX_CURVE[p]; });
 }
 const FCX_NONVIDEO = /^(KBO|KBL|하우스\(내부\)|스플래시|아웃스트림|이미지배너|일시정지)$/;
-const FCX_EARLY = 0.12;   // 하루치가 이만큼도 안 나간 이른 시각이면 시간대 비율로 늘리지 않아요
+const FCX_EARLY = 0.12;
+const FCX_LAG_MIN = 0;    // TAS 오늘 집행 반영 지연(분) — Athena 광고 로그와 대조해 확인되면 넣어요   // 하루치가 이만큼도 안 나간 이른 시각이면 시간대 비율로 늘리지 않아요
 
+// TOP30 임시 확대: 시작일~종료일 사이 TOP20 예상 공급 × 배율 (내 브라우저에만 저장)
+const FCX_T30_KEY = 'fcx_top30_v1';
+FCX.t30 = (() => { try { return JSON.parse(localStorage.getItem(FCX_T30_KEY)) || null; } catch (e) { return null; } })() || { on: true, from: '2026-11-25', to: '', x: 1.13 };
+function fcxT30Save() {
+  const g = id => document.getElementById(id);
+  FCX.t30 = { on: g('pc-fcx-t30').checked, from: g('pc-fcx-t30-from').value, to: g('pc-fcx-t30-to').value, x: Math.max(1, Math.min(2, Number(g('pc-fcx-t30-x').value) || 1.13)) };
+  try { localStorage.setItem(FCX_T30_KEY, JSON.stringify(FCX.t30)); } catch (e) { /* 저장 못 해도 이번 화면엔 적용 */ }
+  fcxRender();
+}
+function fcxT30Inputs() {
+  const g = id => document.getElementById(id); if (!g('pc-fcx-t30')) return;
+  g('pc-fcx-t30').checked = !!FCX.t30.on; g('pc-fcx-t30-from').value = FCX.t30.from || ''; g('pc-fcx-t30-to').value = FCX.t30.to || ''; g('pc-fcx-t30-x').value = FCX.t30.x;
+}
+const fcxT30On = d => { const T = FCX.t30, k = invISO(d); return !!(T && T.on && T.from && k >= T.from && (!T.to || k <= T.to)); };
+// 날짜 D의 TOP20 배율 — 기준(최근 4주)에 이미 확대된 날이 섞여 있으면 그만큼 덜 곱해요
+function fcxT30Mult(prod, D, t) {
+  if (prod !== 'TOP20' || !FCX.t30 || !FCX.t30.on) return 1;
+  let inBase = 0; for (let x = t - 28; x < t; x++) if (fcxT30On(x)) inBase++;
+  const baseX = 1 + (FCX.t30.x - 1) * inBase / 28;
+  return (fcxT30On(D) ? FCX.t30.x : 1) / baseX;
+}
 function fcxSet(k, v) { FCX[k] = v; if (k !== 'prod') FCX.cache = null; fcxRender(); }
 const fcxIso2Day = s => { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? invDay(+m[1], +m[2], +m[3]) : null; };
 const fcxWd = d => invDate(d).getUTCDay();
@@ -9954,7 +9981,9 @@ const fcxWd = d => invDate(d).getUTCDay();
 function fcxAsOf() {
   const m = String(ST.lastUpdated || '').match(/(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})/);
   if (!m) return null;
-  return { day: fcxIso2Day(m[1]), h: +m[2] + +m[3] / 60, label: `${m[2].padStart(2, '0')}:${m[3]}` };
+  // TAS '오늘 집행'이 실제보다 늦게 반영되는 만큼(FCX_LAG_MIN) 기준 시각을 앞당겨요
+  const h = Math.max(0, +m[2] + +m[3] / 60 - FCX_LAG_MIN / 60);
+  return { day: fcxIso2Day(m[1]), h, label: `${m[2].padStart(2, '0')}:${m[3]}` + (FCX_LAG_MIN ? ` (반영 지연 ${FCX_LAG_MIN}분 감안)` : '') };
 }
 function fcxFrac(prod, day, h) {
   const c = FCX_CURVE[prod] || FCX_CURVE._all, a = invWeekend(day) ? c.we : c.wd;
@@ -10024,7 +10053,7 @@ function fcxBuild() {
     const list = byProd[p], rw = fcxRecentWd(p, t), sea = fcxSeason(p, t);
     const n = lastEnd - t + 1, dem = new Array(n).fill(0), sup = new Array(n).fill(null);
     list.forEach(r => { for (let d = Math.max(r.first, t); d <= r.end; d++) dem[d - t] += r.need; });
-    if (rw) for (let i = 0; i < n; i++) sup[i] = rw[fcxWd(t + i)] * sea.S(t + i);
+    if (rw) for (let i = 0; i < n; i++) sup[i] = rw[fcxWd(t + i)] * sea.S(t + i) * fcxT30Mult(p, t + i, t);
     const cpmW = list.reduce((s, r) => s + r.need * (r.cpx || 0), 0), cpmN = list.reduce((s, r) => s + (r.cpx ? r.need : 0), 0);
     prods[p] = { p, list, rw, sea, dem, sup, cpm: cpmN ? cpmW / cpmN : 0, frac: isToday ? fcxFrac(p, t, asOf.h) : null,
       cov: i => sup[i] === null || !dem[i] ? 1 : Math.min(1, sup[i] / dem[i]) };
@@ -10077,6 +10106,7 @@ function fcxRender() {
     if (!DACT.err) { const p = dactLoad(false); if (p && p.then && !FCX.waiting) { FCX.waiting = true; p.then(() => { FCX.waiting = false; fcxRender(); }); } }
     return;
   }
+  fcxT30Inputs();
   const B = fcxBuild(); FCX.last = B;
   const amt = PACE.metric === 'amt', U = amt ? '금액' : '노출';
   const Fp = (P, v) => v === null || v === undefined ? '—' : amt ? invW(v * P.cpm / 1000) : invN(v);
@@ -10084,7 +10114,8 @@ function fcxRender() {
   const t = B.t, srcName = FCX.src === 'vod' ? '작년 VOD 시청시간' : '작년 TAS 상품 실노출';
   meta.innerHTML = (B.isToday ? `오늘 집행은 <b>TAS ${B.asOf.label}</b> 기준이에요 · 평소 이 시각까지 하루치의 몇 %가 나가는지(${FCX_CURVE_NOTE})로 오늘 마감을 추정해요`
       : `<span style="color:var(--red)">TAS 기준 시각이 오늘이 아니라 오늘 마감은 최근 소진율로만 추정해요</span>`) +
-    `<br>기간 예측: 상품 하루 예상 = 최근 4주 같은 요일 실노출 × <b>${srcName}</b> 흐름 · 기간 = 오늘 ~ ${invISO(B.to)} (위 보기 설정 기간) · 금액은 CPM으로 환산해요`;
+    `<br>기간 예측: 상품 하루 예상 = 최근 4주 같은 요일 실노출 × <b>${srcName}</b> 흐름 · 기간 = 오늘 ~ ${invISO(B.to)} (위 보기 설정 기간) · 금액은 CPM으로 환산해요` +
+    (FCX.t30 && FCX.t30.on ? ` · <b>TOP30 확대</b> ${invEsc(FCX.t30.from)}~${invEsc(FCX.t30.to || '계속')} 동안 TOP20 예상 공급 ×${FCX.t30.x}` : '');
 
   const pk = Object.keys(B.prods).sort((a, b) => B.prods[b].dem[0] - B.prods[a].dem[0] || B.prods[b].list.length - B.prods[a].list.length);
   if (!FCX.prod || !B.prods[FCX.prod]) FCX.prod = B.prods['TOP20'] ? 'TOP20' : pk[0] || '';
